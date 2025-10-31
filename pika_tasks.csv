@@ -1,0 +1,4 @@
+source_video_path,instruction
+test_video.mp4,Make the video more cinematic with dramatic lighting
+test_video.mp4,Add slow motion effect to the video
+test_video.mp4,Transform the scene into a futuristic cyberpunk style
