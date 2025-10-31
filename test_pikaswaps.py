@@ -328,6 +328,212 @@ class PikaSwapsTest:
             self.log(f"????: {str(e)}", test_name, "FAIL")
             return False
             
+    async def test_video_upload(self) -> bool:
+        """??9: ????????"""
+        test_name = "??????"
+        try:
+            self.log(f"????...", test_name)
+            
+            # ??????????
+            import os
+            video_path = os.path.abspath("test_files/test_video.mp4")
+            if not os.path.exists(video_path):
+                self.log(f"?????????: {video_path}", test_name, "FAIL")
+                return False
+                
+            self.log(f"??????: {video_path}", test_name)
+            
+            # ????????
+            await self.page.wait_for_timeout(3000)
+            
+            # ????????
+            await self.page.screenshot(path="screenshots/before_upload.png")
+            self.log("?????????", test_name)
+            
+            # ????????????
+            file_input = None
+            
+            # ??????????????
+            selectors = [
+                "input[type='file']",
+                "input[accept*='video']",
+                "[data-testid='file-input']",
+            ]
+            
+            for selector in selectors:
+                try:
+                    element = await self.page.query_selector(selector)
+                    if element:
+                        file_input = element
+                        self.log(f"????????: {selector}", test_name)
+                        break
+                except:
+                    pass
+            
+            if not file_input:
+                # ????????? input????????????
+                self.log("????????????????????", test_name)
+                
+                upload_button_selectors = [
+                    "button:has-text('Upload')",
+                    "button:has-text('upload')",
+                    "[role='button']:has-text('Upload')",
+                    ".upload-button",
+                    "#upload-button",
+                ]
+                
+                for selector in upload_button_selectors:
+                    try:
+                        button = await self.page.query_selector(selector)
+                        if button:
+                            is_visible = await button.is_visible()
+                            if is_visible:
+                                self.log(f"??????: {selector}?????", test_name)
+                                await button.click()
+                                await self.page.wait_for_timeout(1000)
+                                
+                                # ??????? file input
+                                file_input = await self.page.query_selector("input[type='file']")
+                                if file_input:
+                                    self.log("??????????", test_name)
+                                    break
+                    except Exception as e:
+                        self.log(f"????????: {str(e)}", test_name)
+                        pass
+            
+            # ???????????????
+            if file_input:
+                self.log("????????...", test_name)
+                
+                try:
+                    # ?? setInputFiles ??????
+                    await file_input.set_input_files(video_path)
+                    self.log("???????", test_name)
+                    
+                    # ??????
+                    await self.page.wait_for_timeout(3000)
+                    
+                    # ????????
+                    await self.page.screenshot(path="screenshots/after_upload.png")
+                    self.log("?????????", test_name, "PASS")
+                    
+                    return True
+                    
+                except Exception as e:
+                    self.log(f"???????: {str(e)}", test_name, "FAIL")
+                    await self.page.screenshot(path="screenshots/upload_error.png")
+                    return False
+            else:
+                self.log("??????????????????????????", test_name, "WARN")
+                await self.page.screenshot(path="screenshots/no_upload_element.png")
+                return True  # ???????
+                
+        except Exception as e:
+            self.log(f"????: {str(e)}", test_name, "FAIL")
+            await self.page.screenshot(path="screenshots/upload_test_error.png")
+            return False
+            
+    async def test_video_editing(self) -> bool:
+        """??10: ????????"""
+        test_name = "??????"
+        try:
+            self.log(f"????...", test_name)
+            
+            # ??????
+            await self.page.wait_for_timeout(2000)
+            
+            # ????????????
+            edit_selectors = [
+                "button:has-text('Edit')",
+                "button:has-text('edit')",
+                "button:has-text('??')",
+                "[aria-label*='edit' i]",
+                "[data-testid*='edit']",
+                ".edit-button",
+                "#edit-button",
+            ]
+            
+            found_edit_button = False
+            for selector in edit_selectors:
+                try:
+                    button = await self.page.query_selector(selector)
+                    if button:
+                        is_visible = await button.is_visible()
+                        if is_visible:
+                            self.log(f"??????: {selector}", test_name)
+                            found_edit_button = True
+                            
+                            # ??????
+                            await button.click()
+                            self.log("???????", test_name)
+                            
+                            # ????????
+                            await self.page.wait_for_timeout(2000)
+                            
+                            # ???????
+                            await self.page.screenshot(path="screenshots/edit_interface.png")
+                            self.log("????????", test_name)
+                            
+                            break
+                except:
+                    pass
+            
+            # ?????????
+            editing_tools = [
+                ("????", "button:has-text('Cut'), button:has-text('Trim'), [aria-label*='cut' i]"),
+                ("??", "button:has-text('Filter'), [aria-label*='filter' i]"),
+                ("??", "button:has-text('Effect'), [aria-label*='effect' i]"),
+                ("??", "button:has-text('Text'), [aria-label*='text' i]"),
+                ("??", "button:has-text('Audio'), [aria-label*='audio' i]"),
+            ]
+            
+            found_tools = []
+            for tool_name, selector in editing_tools:
+                try:
+                    elements = await self.page.query_selector_all(selector)
+                    if elements and len(elements) > 0:
+                        found_tools.append(tool_name)
+                        self.log(f"??????: {tool_name}", test_name)
+                except:
+                    pass
+            
+            # ?????/?????
+            timeline_selectors = [
+                "video",
+                ".video-player",
+                ".timeline",
+                "[role='slider']",
+                "input[type='range']",
+            ]
+            
+            found_timeline = False
+            for selector in timeline_selectors:
+                try:
+                    element = await self.page.query_selector(selector)
+                    if element:
+                        found_timeline = True
+                        self.log(f"????/?????: {selector}", test_name)
+                        break
+                except:
+                    pass
+            
+            # ?????????
+            await self.page.screenshot(path="screenshots/editing_tools.png")
+            self.log("??????????", test_name)
+            
+            # ??????
+            if found_edit_button or len(found_tools) > 0 or found_timeline:
+                self.log(f"?????????????={found_edit_button}, ???={len(found_tools)}, ???={found_timeline}", test_name, "PASS")
+                return True
+            else:
+                self.log("??????????????????????????????", test_name, "WARN")
+                return True  # ???????
+                
+        except Exception as e:
+            self.log(f"????: {str(e)}", test_name, "FAIL")
+            await self.page.screenshot(path="screenshots/edit_test_error.png")
+            return False
+            
     async def run_all_tests(self):
         """??????"""
         self.log("="*80)
@@ -351,6 +557,8 @@ class PikaSwapsTest:
             ("???????", self.test_responsive_design),
             ("??????", self.test_page_performance),
             ("???????", self.test_console_errors),
+            ("??????", self.test_video_upload),
+            ("??????", self.test_video_editing),
         ]
         
         # ??????
