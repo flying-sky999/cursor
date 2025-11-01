@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+
 """
-Pika (web) smoke automation test ? v1 (derived from the Runway Gen-4 v12 workflow)
+Pika (web) smoke automation test - v1 (derived from the Runway Gen-4 v12 workflow)
 - Load task sheet -> open https://pika.art -> ensure studio workspace
 - Optionally upload a reference clip if UI exposes an upload action
 - Auto-fill prompt, trigger a single generation attempt after a stability dwell
@@ -40,6 +41,10 @@ PIKA_APP_URLS = [
 
 DEFAULT_JOB_LABEL = datetime.now().strftime("pika_%Y%m%d_%H%M%S")
 
+PIKA_LOGIN_URL = "https://pika.art/login"
+PIKA_EMAIL = os.environ.get("PIKA_EMAIL", "mjanwfdj7323@outlook.com")
+PIKA_PASSWORD = os.environ.get("PIKA_PASSWORD", "Yguyl51168.")
+
 
 # ===== Timing / timeouts =====
 NAV_TIMEOUT = 120_000
@@ -71,9 +76,14 @@ SELECTORS = {
     ],
     "processing_only": "text=/Generating|Rendering|Queued|Processing|Preparing/i",
     "complete_badge": "text=/Ready|Completed|Done|Generated/i",
-    "download_banner": "text=/Download|??|??|Export/i",
+    "download_banner": "text=/Download|\\u4fdd\\u5b58|\\u5bfc\\u51fa|Export/i",
     "cookie_accept": "button:has-text('Accept'), button:has-text('Agree'), button:has-text('Allow'), button[data-testid='cookies-accept']",
     "dismiss_toast": "button[aria-label='Close'], button:has-text('Dismiss')",
+    "login_trigger": "a:has-text('Log in'), a:has-text('Sign in'), button:has-text('Log in'), button:has-text('Sign in')",
+    "email_input": "input[name='email'], input[type='email']",
+    "password_input": "input[name='password'], input[type='password']",
+    "login_submit": "button:has-text('Continue'), button:has-text('Log in'), button:has-text('Sign in')",
+    "account_badge": "[data-testid='navbar-user-menu'], button:has-text('Account'), img[alt*='avatar']",
 }
 
 
@@ -84,7 +94,7 @@ A_MAIN = [
     "button[class*='download'], a[class*='download']",
     "button:has-text('Download'), a:has-text('Download')",
     "button:has-text('Export'), a:has-text('Export')",
-    "button:has-text('??'), a:has-text('??')",
+    "button:has-text('\\u4fdd\\u5b58'), a:has-text('\\u4fdd\\u5b58')",
 ]
 
 A_CHEV = [
@@ -100,11 +110,11 @@ DL_TEXT_ITEMS = [
     "Download",
     "Download video",
     "Export",
-    "??",
-    "??",
+    "\u4fdd\u5b58",
+    "\u5bfc\u51fa",
 ]
 
-DL_MENU_REGEX = re.compile(r"(download( mp4| gif| video)?|save|mp4|gif|export|??|??|??)", re.I)
+DL_MENU_REGEX = re.compile(r"(download( mp4| gif| video)?|save|mp4|gif|export|\u5bfc\u51fa|\u4e0b\u8f7d|\u4fdd\u5b58)", re.I)
 
 
 # ===== Utility helpers =====
@@ -189,6 +199,115 @@ def dismiss_toasts(page: Page) -> None:
                     pass
     except Exception:
         pass
+
+
+def is_logged_in(page: Page) -> bool:
+    try:
+        if page.is_visible(SELECTORS["account_badge"], timeout=1_500):
+            return True
+    except Exception:
+        pass
+
+    try:
+        if not page.is_visible(SELECTORS["login_trigger"], timeout=1_500):
+            # Heuristic: absence of login button + presence of creation controls implies logged in
+            if page.is_visible(SELECTORS["new_video"], timeout=1_000):
+                return True
+    except Exception:
+        pass
+
+    return False
+
+
+def perform_login(page: Page) -> bool:
+    if not PIKA_EMAIL or not PIKA_PASSWORD:
+        print("[ERROR] Missing PIKA_EMAIL or PIKA_PASSWORD configuration.")
+        return False
+
+    try:
+        if not page.is_visible(SELECTORS["email_input"], timeout=5_000):
+            print("[ERROR] Login form not detected on the page.")
+            return False
+    except Exception as exc:
+        print("[ERROR] Unexpected error locating login form:", exc)
+        return False
+
+    try:
+        page.fill(SELECTORS["email_input"], PIKA_EMAIL, timeout=ACTION_TIMEOUT)
+    except Exception:
+        try:
+            email_box = page.locator(SELECTORS["email_input"]).first
+            email_box.click(timeout=ACTION_TIMEOUT)
+            page.keyboard.press("Control+A")
+            page.keyboard.press("Backspace")
+            page.keyboard.type(PIKA_EMAIL, delay=18)
+        except Exception as exc:
+            print("[ERROR] Unable to fill email field:", exc)
+            return False
+
+    try:
+        page.fill(SELECTORS["password_input"], PIKA_PASSWORD, timeout=ACTION_TIMEOUT)
+    except Exception:
+        try:
+            password_box = page.locator(SELECTORS["password_input"]).first
+            password_box.click(timeout=ACTION_TIMEOUT)
+            page.keyboard.press("Control+A")
+            page.keyboard.press("Backspace")
+            page.keyboard.type(PIKA_PASSWORD, delay=18)
+        except Exception as exc:
+            print("[ERROR] Unable to fill password field:", exc)
+            return False
+
+    try:
+        if page.is_visible(SELECTORS["login_submit"], timeout=1_500):
+            page.click(SELECTORS["login_submit"])
+        else:
+            page.keyboard.press("Enter")
+    except Exception as exc:
+        print("[WARN] Login submit interaction encountered an issue:", exc)
+        try:
+            page.keyboard.press("Enter")
+        except Exception:
+            pass
+
+    for _ in range(30):
+        if is_logged_in(page):
+            print("[STEP] Login successful.")
+            return True
+        time.sleep(1.5)
+
+    print("[ERROR] Login attempt timed out. Please verify credentials or UI changes.")
+    return False
+
+
+def ensure_logged_in(page: Page) -> bool:
+    if is_logged_in(page):
+        print("[STEP] Detected existing authenticated session.")
+        return True
+
+    try:
+        if page.is_visible(SELECTORS["login_trigger"], timeout=3_000):
+            page.click(SELECTORS["login_trigger"])
+            human_sleep()
+    except Exception as exc:
+        print("[WARN] Unable to trigger login dialog via navbar:", exc)
+
+    if not page.is_visible(SELECTORS["email_input"], timeout=5_000):
+        if not safe_goto(page, PIKA_LOGIN_URL):
+            print("[ERROR] Failed to navigate to the login page.")
+            return False
+        human_sleep(0.8, 1.6)
+
+    if not perform_login(page):
+        return False
+
+    # Provide a small buffer for post-login redirects
+    human_sleep(1.0, 2.0)
+    if not is_logged_in(page):
+        print("[WARN] Login did not yield an authenticated state. Re-check UI manually.")
+        return False
+
+    return True
 
 
 def ensure_studio_ready(page: Page) -> bool:
@@ -352,7 +471,7 @@ def wait_generate_ready_then_click_once(page: Page) -> bool:
         if ready:
             if first_ready is None:
                 first_ready = now
-                print(f"[STEP] Generate button ready, waiting {READY_DWELL_SEC}s for stability?")
+                print(f"[STEP] Generate button ready, waiting {READY_DWELL_SEC}s for stability...")
             if (now - first_ready) >= READY_DWELL_SEC and not clicked:
                 try:
                     btn.scroll_into_view_if_needed(timeout=2_000)
@@ -372,7 +491,7 @@ def wait_generate_ready_then_click_once(page: Page) -> bool:
             first_ready = None
 
         if processing_banner_visible(page):
-            print("[INFO] Upload/processing in progress?")
+            print("[INFO] Upload/processing in progress...")
 
         time.sleep(4)
 
@@ -398,7 +517,7 @@ def first_visible_in_frames(page: Page, selectors: List[str]) -> Optional[Locato
 
 
 def wait_controls_method_A_only(page: Page, stable_sec: int = A_STABLE_SEC) -> Tuple[Optional[Locator], Optional[Locator]]:
-    print("[STEP] (A) Waiting for stable download controls (primary/dropdown)?")
+    print("[STEP] (A) Waiting for stable download controls (primary/dropdown)...")
     start = time.time()
     first_seen: Optional[float] = None
     last_signature: Optional[Tuple[str, str]] = None
@@ -440,7 +559,7 @@ def try_download_via_A(page: Page, filename_prefix: str, main_btn: Optional[Loca
     # Attempt primary button first
     if main_btn:
         try:
-            print("[TRY] Method A ? primary download button?")
+            print("[TRY] Method A - primary download button...")
             with page.expect_download(timeout=180_000) as download_info:
                 try:
                     main_btn.scroll_into_view_if_needed(timeout=2_000)
@@ -459,7 +578,7 @@ def try_download_via_A(page: Page, filename_prefix: str, main_btn: Optional[Loca
     # Fallback via dropdown menu
     if chev_btn:
         try:
-            print("[TRY] Method A ? dropdown download menu?")
+            print("[TRY] Method A - dropdown download menu...")
             try:
                 chev_btn.scroll_into_view_if_needed(timeout=2_000)
             except Exception:
@@ -494,7 +613,7 @@ def try_download_via_A(page: Page, filename_prefix: str, main_btn: Optional[Loca
 
             if not target_item:
                 target_item = page.locator(
-                    "text=/Download|??|??|Export|MP4|GIF/i"
+                    "text=/Download|\\u4fdd\\u5b58|\\u5bfc\\u51fa|Export|MP4|GIF/i"
                 ).first
 
             if not target_item:
@@ -541,13 +660,17 @@ def main() -> None:
         page.set_default_timeout(ACTION_TIMEOUT)
         page.set_default_navigation_timeout(NAV_TIMEOUT)
 
-        print("[STEP] Opening Pika home page?")
+        print("[STEP] Opening Pika home page...")
         if not safe_goto(page, PIKA_HOME_URL):
             print("[ERROR] Unable to reach Pika website.")
             return
 
         accept_cookies(page)
         time.sleep(2)
+
+        if not ensure_logged_in(page):
+            print("[ERROR] Automatic login failed. Please verify credentials and rerun.")
+            return
 
         for idx, task in enumerate(tasks, start=1):
             print(f"\n[JOB {idx}/{len(tasks)}] {task['filename']}")
@@ -566,29 +689,29 @@ def main() -> None:
             upload_clip(page, task["file_path"])
 
             if not set_prompt(page, task["prompt"]):
-                print("[WARN] Prompt auto-fill failed. Please enter manually and press Enter to continue?")
+                print("[WARN] Prompt auto-fill failed. Please enter manually and press Enter to continue...")
                 input()
 
-            print(f"[STEP] Waiting {READY_DWELL_SEC}s of stability before triggering Generate?")
+            print(f"[STEP] Waiting {READY_DWELL_SEC}s of stability before triggering Generate...")
             if not wait_generate_ready_then_click_once(page):
                 print("[WARN] Generate action did not fire. Skipping this task.")
                 continue
 
-            print(f"[STEP] Generate clicked. Idling for {MIN_RENDER_WAIT_SEC}s to allow rendering?")
+            print(f"[STEP] Generate clicked. Idling for {MIN_RENDER_WAIT_SEC}s to allow rendering...")
             waited = 0
             while waited < MIN_RENDER_WAIT_SEC:
                 time.sleep(15)
                 waited += 15
                 print(f"[INFO] Render quiet wait: {waited}s / {MIN_RENDER_WAIT_SEC}s")
 
-            print("[STEP] Method A loop: detect ? click ? cooldown until success or timeout?")
+            print("[STEP] Method A loop: detect -> click -> cooldown until success or timeout...")
             cycle_start = time.time()
             downloaded = False
 
             while time.time() - cycle_start < JOB_TIMEOUT_SEC:
                 main_btn, chev_btn = wait_controls_method_A_only(page, A_STABLE_SEC)
                 if not main_btn and not chev_btn:
-                    print("[WARN] Method A did not find download controls yet. Retrying?")
+                    print("[WARN] Method A did not find download controls yet. Retrying...")
                     time.sleep(POLL_INTERVAL_SEC)
                     continue
 
@@ -597,7 +720,7 @@ def main() -> None:
                     downloaded = True
                     break
 
-                print(f"[COOLDOWN] Download attempt failed. Cooling down for {CLICK_COOLDOWN_SEC}s?")
+                print(f"[COOLDOWN] Download attempt failed. Cooling down for {CLICK_COOLDOWN_SEC}s...")
                 time.sleep(CLICK_COOLDOWN_SEC)
 
             if not downloaded:
