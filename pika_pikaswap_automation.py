@@ -2,12 +2,20 @@
 
 """
 Pika PikaSwap Automation Script - Simplified Version
+
 Strictly follows these steps:
 1. Navigate to https://pika.art/app
 2. Click Pikaswaps feature button
-3. Upload video
-4. Fill prompt text
-5. Click generate button
+3. Upload video by clicking label element (body > main > div > div.sticky.bottom-0 ... > label)
+4. Fill prompt text in textarea#promptText
+5. Click generate button (button with sparkle SVG icon)
+
+Key improvements:
+- Uses precise DOM selectors provided by user
+- Multiple fallback selectors for robustness
+- Proper file upload via label click
+- Verification of filled text content
+- No login validation (assumes persistent session)
 """
 
 import sys
@@ -38,17 +46,17 @@ SELECTORS = {
     # Pikaswaps feature button
     "pikaswaps_button": "button.flex.flex-col.items-center:has-text('Pikaswaps')",
     
-    # Video upload area (based on provided HTML structure)
-    "video_upload_div": "div.group.relative.flex.h-15.w-15.shrink-0",
-    "video_upload_label": "label[for='modify-region-video']",
+    # Video upload label (more precise selector based on DOM structure)
+    "video_upload_label": "body > main > div > div.sticky.bottom-0 label, label[for='modify-region-video']",
+    "video_upload_label_simple": "form label",
     "video_input": "#modify-region-video, input[type='file']",
     
     # Prompt input field
-    "prompt_textarea": "#promptText",
+    "prompt_textarea": "#promptText, textarea[placeholder*='swap']",
     
     # Generate button (look for span with specific SVG)
-    "generate_button": "button:has(span.fill-dark-background), button span.absolute:has(svg[fill='white'])",
-    "generate_button_alt": "button:has(svg[fill='white'])",
+    "generate_button": "button:has(span.fill-dark-background), button:has(span.bg-accent-primary)",
+    "generate_button_span": "span.absolute.left-0.top-0:has(svg[fill='white'])",
 }
 
 
@@ -116,7 +124,7 @@ def click_pikaswaps_button(page: Page) -> bool:
 
 
 def upload_video(page: Page, video_path: str) -> bool:
-    """Step 2: Upload video file"""
+    """Step 2: Upload video file by clicking the label element"""
     print(f"[STEP 2] Uploading video: {video_path}")
     
     video_file = Path(video_path)
@@ -124,88 +132,143 @@ def upload_video(page: Page, video_path: str) -> bool:
         print(f"[ERROR] Video file does not exist: {video_path}")
         return False
     
-    try:
-        # Method 1: Direct file input
-        if page.is_visible(SELECTORS["video_input"], timeout=3_000):
-            page.set_input_files(SELECTORS["video_input"], str(video_file))
-            human_sleep(1.0, 2.0)
-            print(f"? Successfully uploaded video (Method 1)")
-            return True
-    except Exception as exc1:
-        print(f"[INFO] Method 1 failed, trying Method 2: {exc1}")
-        
+    # Try multiple methods to upload the video
+    methods = [
+        ("Clicking precise label selector", SELECTORS["video_upload_label"]),
+        ("Clicking simple form label", SELECTORS["video_upload_label_simple"]),
+        ("Clicking any label in form", "form label"),
+        ("Clicking label with upload icon", "label:has(svg)"),
+    ]
+    
+    for method_name, selector in methods:
         try:
-            # Method 2: Click upload area to trigger file chooser
+            print(f"[TRY] {method_name}...")
+            # Wait a bit for UI to be ready
+            human_sleep(0.5, 1.0)
+            
             with page.expect_file_chooser(timeout=15_000) as chooser:
-                # Try clicking the div upload area
-                if page.is_visible(SELECTORS["video_upload_div"], timeout=3_000):
-                    page.click(SELECTORS["video_upload_div"])
-                elif page.is_visible(SELECTORS["video_upload_label"], timeout=3_000):
-                    page.click(SELECTORS["video_upload_label"])
-                else:
-                    # Look for element with upload icon
-                    page.click("div.group.relative.flex:has(svg)")
+                page.click(selector, timeout=ACTION_TIMEOUT)
             
             chooser.value.set_files(str(video_file))
-            human_sleep(1.0, 2.0)
-            print(f"? Successfully uploaded video (Method 2)")
+            human_sleep(2.0, 3.0)
+            print(f"? Successfully uploaded video via {method_name}")
             return True
-        except Exception as exc2:
-            print(f"[ERROR] Video upload failed: {exc2}")
-            return False
-
-
-def fill_prompt(page: Page, prompt_text: str) -> bool:
-    """Step 3: Fill prompt text"""
-    print(f"[STEP 3] Filling prompt: {prompt_text[:50]}...")
+        except Exception as exc:
+            print(f"[INFO] {method_name} failed: {exc}")
+            continue
     
+    # Last resort: try direct file input
     try:
-        # Wait for textarea to be visible
-        page.wait_for_selector(SELECTORS["prompt_textarea"], timeout=10_000)
-        
-        # Click and clear
-        page.click(SELECTORS["prompt_textarea"], timeout=ACTION_TIMEOUT)
-        page.fill(SELECTORS["prompt_textarea"], "", timeout=ACTION_TIMEOUT)
-        
-        # Fill new content
-        page.fill(SELECTORS["prompt_textarea"], prompt_text, timeout=ACTION_TIMEOUT)
-        human_sleep(0.5, 1.0)
-        print("? Successfully filled prompt")
+        print("[TRY] Direct file input as fallback...")
+        page.set_input_files(SELECTORS["video_input"], str(video_file), timeout=ACTION_TIMEOUT)
+        human_sleep(2.0, 3.0)
+        print("? Successfully uploaded video via direct input")
         return True
     except Exception as exc:
-        print(f"[ERROR] Failed to fill prompt: {exc}")
+        print(f"[ERROR] All upload methods failed: {exc}")
         return False
 
 
-def click_generate_button(page: Page) -> bool:
-    """Step 4: Click generate button"""
-    print("[STEP 4] Clicking generate button...")
+def fill_prompt(page: Page, prompt_text: str) -> bool:
+    """Step 3: Fill prompt text in textarea"""
+    print(f"[STEP 3] Filling prompt: {prompt_text[:50]}...")
     
-    # Try multiple possible selectors
-    selectors_to_try = [
-        "button:has(span.fill-dark-background)",
-        "button:has(span.bg-accent-primary)",
-        "button:has(svg[fill='white'])",
-        "button span.absolute.left-0.top-0",
-        "button:has(span:has(svg[fill='white']))",
+    # Try multiple selectors for the prompt field
+    prompt_selectors = [
+        SELECTORS["prompt_textarea"],
+        "#promptText",
+        "textarea[name='promptText']",
+        "textarea[placeholder*='swap']",
+        "textarea",
     ]
     
-    for selector in selectors_to_try:
+    for selector in prompt_selectors:
         try:
-            if page.is_visible(selector, timeout=2_000):
-                # Scroll into view
-                page.locator(selector).first.scroll_into_view_if_needed(timeout=2_000)
-                human_sleep(0.3, 0.6)
-                
-                # Click button
-                page.click(selector, timeout=ACTION_TIMEOUT)
-                human_sleep(1.0, 2.0)
-                print(f"? Successfully clicked generate button (using selector: {selector})")
+            # Wait for textarea to be visible
+            if not page.is_visible(selector, timeout=3_000):
+                continue
+            
+            print(f"[TRY] Using selector: {selector}")
+            
+            # Click to focus
+            page.click(selector, timeout=ACTION_TIMEOUT)
+            human_sleep(0.3, 0.6)
+            
+            # Clear existing content
+            page.evaluate(f"document.querySelector('{selector}').value = ''")
+            
+            # Fill new content
+            page.fill(selector, prompt_text, timeout=ACTION_TIMEOUT)
+            human_sleep(0.5, 1.0)
+            
+            # Verify content was filled
+            current_value = page.input_value(selector)
+            if current_value == prompt_text:
+                print("? Successfully filled prompt")
                 return True
-        except Exception:
+            else:
+                print(f"[WARN] Filled text doesn't match. Expected length: {len(prompt_text)}, got: {len(current_value)}")
+        except Exception as exc:
+            print(f"[INFO] Selector {selector} failed: {exc}")
             continue
     
-    print("[ERROR] Could not find or click generate button")
+    print("[ERROR] Failed to fill prompt with all selectors")
+    return False
+
+
+def click_generate_button(page: Page) -> bool:
+    """Step 4: Click generate button with the sparkle icon"""
+    print("[STEP 4] Clicking generate button...")
+    
+    # Try multiple possible selectors for the generate button
+    button_selectors = [
+        # Look for button containing the specific span with SVG
+        "button:has(span.absolute.left-0.top-0:has(svg[fill='white']))",
+        "button:has(span.fill-dark-background)",
+        "button:has(span.bg-accent-primary)",
+        # Try finding the button by the SVG icon
+        "button:has(svg[fill='white'])",
+        "button:has(svg path[d*='M8.90747'])",  # SVG path from the sparkle icon
+        # Generic submit/generate buttons
+        "button[type='submit']",
+        "form button:not([type='button'])",
+    ]
+    
+    for selector in button_selectors:
+        try:
+            print(f"[TRY] Selector: {selector}")
+            
+            if not page.is_visible(selector, timeout=2_000):
+                continue
+            
+            # Get the button element
+            button = page.locator(selector).first
+            
+            # Scroll into view
+            button.scroll_into_view_if_needed(timeout=2_000)
+            human_sleep(0.5, 1.0)
+            
+            # Click the button
+            button.click(timeout=ACTION_TIMEOUT)
+            human_sleep(2.0, 3.0)
+            
+            print(f"\u2713 Successfully clicked generate button (selector: {selector})")
+            return True
+        except Exception as exc:
+            print(f"[INFO] Selector {selector} failed: {exc}")
+            continue
+    
+    # Last attempt: try to find any button near the prompt textarea
+    try:
+        print("[TRY] Looking for button near prompt textarea...")
+        # Find textarea, then look for nearby button
+        page.click("form button", timeout=ACTION_TIMEOUT)
+        human_sleep(2.0, 3.0)
+        print("\u2713 Successfully clicked generate button (form button)")
+        return True
+    except Exception as exc:
+        print(f"[ERROR] All generate button selectors failed: {exc}")
+    
     return False
 
 
