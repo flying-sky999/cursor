@@ -19,17 +19,33 @@ The script now uses **fixed pixel coordinates (677, 396)** to click the upload b
 - Opens file chooser dialog
 - Selects video from local folder
 - No dependency on CSS selectors
-- Automatic debug screenshots
+- **Automatic debug screenshots with click markers** ??
 - Multiple fallback methods
+
+### New: Screenshot Marking Feature ??
+
+Screenshots now show exactly where the script clicks:
+- **Red circle** around click point
+- **Crosshairs** for precise positioning
+- **Coordinate label** showing (x, y)
+- Visual verification of click location
+- Easy debugging of coordinate issues
 
 ## Quick Start
 
 ### 1. Install Dependencies
 
 ```bash
-pip install playwright pandas openpyxl
+# Option 1: Install from requirements.txt (recommended)
+pip install -r requirements.txt
+playwright install chromium
+
+# Option 2: Manual installation
+pip install playwright pandas openpyxl Pillow
 playwright install chromium
 ```
+
+**Note**: `Pillow` is required for screenshot marking feature. Without it, screenshots will be saved but without visual markers.
 
 ### 2. Configure Paths
 

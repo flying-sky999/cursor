@@ -40,15 +40,87 @@ def ensure_dir(path: str) -> None:
     Path(path).mkdir(parents=True, exist_ok=True)
 
 
-def save_debug_screenshot(page: Page, name: str) -> None:
-    """Save a screenshot for debugging purposes"""
+def save_debug_screenshot(page: Page, name: str, mark_point: tuple = None) -> None:
+    """Save a screenshot for debugging purposes, optionally marking a click point
+    
+    Args:
+        page: Playwright page object
+        name: Screenshot name prefix
+        mark_point: Optional tuple (x, y) to mark on screenshot
+    """
     try:
         screenshot_dir = Path(DOWNLOAD_DIR) / "debug_screenshots"
         screenshot_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         screenshot_path = screenshot_dir / f"{name}_{timestamp}.png"
+        
+        # Take the screenshot
         page.screenshot(path=str(screenshot_path))
-        print(f"[DEBUG] Screenshot saved: {screenshot_path}")
+        
+        # If we have a point to mark, draw it on the screenshot
+        if mark_point:
+            try:
+                from PIL import Image, ImageDraw, ImageFont
+                
+                # Open the screenshot
+                img = Image.open(screenshot_path)
+                draw = ImageDraw.Draw(img)
+                
+                x, y = mark_point
+                
+                # Draw a red circle at the click point
+                radius = 10
+                draw.ellipse(
+                    [(x - radius, y - radius), (x + radius, y + radius)],
+                    outline='red',
+                    width=3
+                )
+                
+                # Draw crosshairs
+                line_length = 20
+                draw.line([(x - line_length, y), (x + line_length, y)], fill='red', width=2)
+                draw.line([(x, y - line_length), (x, y + line_length)], fill='red', width=2)
+                
+                # Draw a small center dot
+                draw.ellipse([(x - 2, y - 2), (x + 2, y + 2)], fill='red')
+                
+                # Add coordinate text
+                text = f"({int(x)}, {int(y)})"
+                # Try to use a font, fallback to default if not available
+                try:
+                    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
+                except Exception:
+                    font = ImageFont.load_default()
+                
+                # Draw text with background for better visibility
+                text_bbox = draw.textbbox((0, 0), text, font=font)
+                text_width = text_bbox[2] - text_bbox[0]
+                text_height = text_bbox[3] - text_bbox[1]
+                
+                text_x = x + 15
+                text_y = y - 25
+                
+                # Draw background rectangle
+                draw.rectangle(
+                    [(text_x - 2, text_y - 2), (text_x + text_width + 2, text_y + text_height + 2)],
+                    fill='white',
+                    outline='red',
+                    width=1
+                )
+                
+                # Draw text
+                draw.text((text_x, text_y), text, fill='red', font=font)
+                
+                # Save the modified image
+                img.save(screenshot_path)
+                print(f"[DEBUG] Screenshot saved with mark at {mark_point}: {screenshot_path}")
+            except ImportError:
+                print(f"[WARN] PIL not available, screenshot saved without mark: {screenshot_path}")
+            except Exception as e:
+                print(f"[WARN] Could not mark point on screenshot: {e}")
+                print(f"[DEBUG] Screenshot saved without mark: {screenshot_path}")
+        else:
+            print(f"[DEBUG] Screenshot saved: {screenshot_path}")
     except Exception as e:
         print(f"[WARN] Could not save screenshot: {e}")
 
@@ -128,14 +200,17 @@ def upload_video(page: Page, video_path: str) -> bool:
         return False
     
     print(f"[DEBUG] Video file size: {video_file.stat().st_size / (1024*1024):.2f} MB")
-    save_debug_screenshot(page, "before_upload")
+    
+    # Fixed coordinates for upload button
+    upload_x = 677
+    upload_y = 396
+    
+    # Save screenshot before upload with click point marked
+    save_debug_screenshot(page, "before_upload", mark_point=(upload_x, upload_y))
     
     # Method 1: Click at fixed coordinates (677, 396) - PRIMARY METHOD
     print("\n[METHOD 1] Clicking at fixed coordinates (677, 396)...")
     try:
-        # Fixed coordinates for upload button
-        upload_x = 677
-        upload_y = 396
         
         print(f"[INFO] Clicking at fixed position: ({upload_x}, {upload_y})")
         
@@ -154,7 +229,7 @@ def upload_video(page: Page, video_path: str) -> bool:
         human_sleep(3.0, 4.0)
         
         print("? Successfully uploaded video via fixed coordinates (677, 396)")
-        save_debug_screenshot(page, "after_upload_success")
+        save_debug_screenshot(page, "after_upload_success", mark_point=(upload_x, upload_y))
         return True
         
     except Exception as exc:
@@ -194,6 +269,7 @@ def upload_video(page: Page, video_path: str) -> bool:
                 chooser.value.set_files(str(video_file))
                 human_sleep(3.0, 4.0)
                 print(f"? Successfully uploaded video at ({x}, {y})")
+                save_debug_screenshot(page, "after_upload_success", mark_point=(x, y))
                 return True
             except Exception:
                 continue
@@ -215,7 +291,7 @@ def upload_video(page: Page, video_path: str) -> bool:
         print(f"[WARN] Label click failed: {exc}")
     
     print("\n[ERROR] All upload methods failed")
-    save_debug_screenshot(page, "upload_failed")
+    save_debug_screenshot(page, "upload_failed", mark_point=(upload_x, upload_y))
     return False
 
 
