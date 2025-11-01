@@ -1,21 +1,9 @@
 # -*- coding: utf-8 -*-
 
 """
-Pika PikaSwap Automation Script - Simplified Version
+Pika PikaSwap Automation Script - Coordinate Click Version
 
-Strictly follows these steps:
-1. Navigate to https://pika.art/app
-2. Click Pikaswaps feature button
-3. Upload video by clicking label element (body > main > div > div.sticky.bottom-0 ... > label)
-4. Fill prompt text in textarea#promptText
-5. Click generate button (button with sparkle SVG icon)
-
-Key improvements:
-- Uses precise DOM selectors provided by user
-- Multiple fallback selectors for robustness
-- Proper file upload via label click
-- Verification of filled text content
-- No login validation (assumes persistent session)
+Uses coordinate-based clicking for reliable video upload
 """
 
 import sys
@@ -40,24 +28,6 @@ PIKA_APP_URL = "https://pika.art/app"
 # ===== Timeout Settings =====
 NAV_TIMEOUT = 120_000
 ACTION_TIMEOUT = 60_000
-
-# ===== Selector Configuration =====
-SELECTORS = {
-    # Pikaswaps feature button
-    "pikaswaps_button": "button.flex.flex-col.items-center:has-text('Pikaswaps')",
-    
-    # Video upload label (more precise selector based on DOM structure)
-    "video_upload_label": "body > main > div > div.sticky.bottom-0 label, label[for='modify-region-video']",
-    "video_upload_label_simple": "form label",
-    "video_input": "#modify-region-video, input[type='file']",
-    
-    # Prompt input field
-    "prompt_textarea": "#promptText, textarea[placeholder*='swap']",
-    
-    # Generate button (look for span with specific SVG)
-    "generate_button": "button:has(span.fill-dark-background), button:has(span.bg-accent-primary)",
-    "generate_button_span": "span.absolute.left-0.top-0:has(svg[fill='white'])",
-}
 
 
 def human_sleep(a: float = 0.5, b: float = 1.6) -> None:
@@ -126,8 +96,9 @@ def click_pikaswaps_button(page: Page) -> bool:
     
     try:
         # Try using the provided selector
-        page.wait_for_selector(SELECTORS["pikaswaps_button"], timeout=10_000)
-        page.click(SELECTORS["pikaswaps_button"], timeout=ACTION_TIMEOUT)
+        pikaswaps_selector = "button:has-text('Pikaswaps')"
+        page.wait_for_selector(pikaswaps_selector, timeout=10_000)
+        page.click(pikaswaps_selector, timeout=ACTION_TIMEOUT)
         print("? Successfully clicked Pikaswaps button")
         
         # Wait for the Pikaswaps interface to load
@@ -148,7 +119,7 @@ def click_pikaswaps_button(page: Page) -> bool:
 
 
 def upload_video(page: Page, video_path: str) -> bool:
-    """Step 2: Upload video file by clicking the label element"""
+    """Step 2: Upload video by clicking at label coordinates"""
     print(f"[STEP 2] Uploading video: {video_path}")
     
     video_file = Path(video_path)
@@ -157,256 +128,173 @@ def upload_video(page: Page, video_path: str) -> bool:
         return False
     
     print(f"[DEBUG] Video file size: {video_file.stat().st_size / (1024*1024):.2f} MB")
-    
-    # Save a screenshot before attempting upload
     save_debug_screenshot(page, "before_upload")
     
-    # First, let's check what upload elements are available on the page
-    print("[DEBUG] Checking available upload elements...")
+    # Method 1: Click at coordinates of upload label (PRIMARY METHOD)
+    print("\n[METHOD 1] Clicking at upload label coordinates...")
     try:
-        # Check for input[type=file]
-        file_inputs = page.locator("input[type='file']").count()
-        print(f"[DEBUG] Found {file_inputs} file input(s)")
+        label_selector = "label[for='modify-region-video']"
         
-        # Check for labels
-        labels = page.locator("label").count()
-        print(f"[DEBUG] Found {labels} label(s)")
+        # Wait for label to be present
+        page.wait_for_selector(label_selector, state="visible", timeout=10_000)
         
-        # Check for form
-        forms = page.locator("form").count()
-        print(f"[DEBUG] Found {forms} form(s)")
-    except Exception as e:
-        print(f"[DEBUG] Element check failed: {e}")
+        label = page.locator(label_selector).first
+        
+        # Get bounding box
+        box = label.bounding_box()
+        if box is None:
+            raise Exception("Could not get bounding box")
+        
+        # Calculate center coordinates
+        center_x = box['x'] + box['width'] / 2
+        center_y = box['y'] + box['height'] / 2
+        
+        print(f"[INFO] Label dimensions: x={box['x']:.1f}, y={box['y']:.1f}, w={box['width']:.1f}, h={box['height']:.1f}")
+        print(f"[INFO] Clicking at center: ({center_x:.1f}, {center_y:.1f})")
+        
+        # Scroll into view first
+        label.scroll_into_view_if_needed()
+        human_sleep(0.5, 1.0)
+        
+        # Click at coordinates and wait for file chooser
+        with page.expect_file_chooser(timeout=15_000) as chooser:
+            page.mouse.click(center_x, center_y)
+        
+        # Set the file
+        chooser.value.set_files(str(video_file))
+        human_sleep(3.0, 4.0)
+        
+        print("? Successfully uploaded video via coordinate click")
+        save_debug_screenshot(page, "after_upload_success")
+        return True
+        
+    except Exception as exc:
+        print(f"[WARN] Coordinate click failed: {exc}")
     
-    # Method 1: Try direct file input first (most reliable)
-    print("\n[METHOD 1] Trying direct file input...")
-    input_selectors = [
-        "#modify-region-video",
-        "input[type='file']",
-        "input[accept*='video']",
-        "form input[type='file']",
-    ]
-    
-    for selector in input_selectors:
-        try:
-            if page.locator(selector).count() > 0:
-                print(f"[TRY] Direct input with selector: {selector}")
-                page.set_input_files(selector, str(video_file), timeout=10_000)
-                human_sleep(2.0, 3.0)
-                print(f"? Successfully uploaded video via direct input: {selector}")
-                return True
-        except Exception as exc:
-            print(f"[INFO] Selector {selector} failed: {exc}")
-    
-    # Method 2: Click label to trigger file chooser
-    print("\n[METHOD 2] Trying to click label elements...")
-    label_selectors = [
-        "label[for='modify-region-video']",
-        "form label",
-        "div.relative.mx-auto label",
-        "div.flex.flex-col.gap-3 label",
-        "label:has(svg)",
-        "label:has(div.group.relative.flex)",
-    ]
-    
-    for selector in label_selectors:
-        try:
-            label_count = page.locator(selector).count()
-            if label_count == 0:
-                continue
-                
-            print(f"[TRY] Clicking label: {selector} (found {label_count})")
-            
-            # Try each matching label
-            for idx in range(label_count):
-                try:
-                    label = page.locator(selector).nth(idx)
-                    if not label.is_visible():
-                        continue
-                    
-                    print(f"[TRY] Clicking label #{idx}...")
-                    with page.expect_file_chooser(timeout=15_000) as chooser:
-                        label.click(timeout=ACTION_TIMEOUT)
-                    
-                    chooser.value.set_files(str(video_file))
-                    human_sleep(2.0, 3.0)
-                    print(f"? Successfully uploaded video by clicking label #{idx}")
-                    return True
-                except Exception as exc:
-                    print(f"[INFO] Label #{idx} failed: {exc}")
-                    continue
-        except Exception as exc:
-            print(f"[INFO] Selector {selector} failed: {exc}")
-    
-    # Method 3: Click the div with upload icon
-    print("\n[METHOD 3] Trying to click upload icon div...")
-    div_selectors = [
-        "div.group.relative.flex.h-15.w-15",
-        "div.group.relative.flex:has(svg)",
-        "div:has(svg path[stroke='#fff'])",
-    ]
-    
-    for selector in div_selectors:
-        try:
-            if page.locator(selector).count() > 0:
-                print(f"[TRY] Clicking div: {selector}")
-                with page.expect_file_chooser(timeout=15_000) as chooser:
-                    page.click(selector, timeout=ACTION_TIMEOUT)
-                
-                chooser.value.set_files(str(video_file))
-                human_sleep(2.0, 3.0)
-                print(f"? Successfully uploaded video by clicking div")
-                return True
-        except Exception as exc:
-            print(f"[INFO] Selector {selector} failed: {exc}")
-    
-    # Method 4: JavaScript injection to trigger file input
-    print("\n[METHOD 4] Trying JavaScript injection...")
+    # Method 2: Try direct file input
+    print("\n[METHOD 2] Trying direct file input...")
     try:
-        js_code = f"""
-        (filePath) => {{
-            const input = document.querySelector('input[type="file"]') || 
-                         document.querySelector('#modify-region-video');
-            if (input) {{
-                console.log('Found input via JS:', input);
-                return true;
-            }}
-            return false;
-        }}
-        """
-        found = page.evaluate(js_code)
-        if found:
-            print("[INFO] File input found via JS, trying to set files...")
-            page.set_input_files("input[type='file']", str(video_file))
-            human_sleep(2.0, 3.0)
-            print("? Successfully uploaded video via JavaScript")
+        input_selector = "#modify-region-video"
+        if page.locator(input_selector).count() > 0:
+            print(f"[TRY] Setting files directly to input")
+            page.set_input_files(input_selector, str(video_file), timeout=10_000)
+            human_sleep(3.0, 4.0)
+            print("? Successfully uploaded video via direct input")
             return True
     except Exception as exc:
-        print(f"[INFO] JavaScript method failed: {exc}")
+        print(f"[WARN] Direct input failed: {exc}")
     
-    print("\n[ERROR] All upload methods exhausted. Cannot upload video.")
-    
-    # Save screenshot for debugging
-    save_debug_screenshot(page, "upload_failed")
-    
-    # Try to print relevant HTML for debugging
+    # Method 3: Click the upload icon div
+    print("\n[METHOD 3] Clicking upload icon...")
     try:
-        print("\n[DEBUG] Dumping form HTML for inspection...")
-        form_html = page.locator("form").first.inner_html()
-        # Print first 500 chars
-        print(f"[DEBUG] Form HTML (first 500 chars):\n{form_html[:500]}")
-    except Exception as e:
-        print(f"[DEBUG] Could not retrieve form HTML: {e}")
+        icon_selector = "label[for='modify-region-video'] div.group.relative.flex"
+        if page.locator(icon_selector).count() > 0:
+            icon = page.locator(icon_selector).first
+            box = icon.bounding_box()
+            if box:
+                center_x = box['x'] + box['width'] / 2
+                center_y = box['y'] + box['height'] / 2
+                print(f"[INFO] Clicking icon at: ({center_x:.1f}, {center_y:.1f})")
+                
+                with page.expect_file_chooser(timeout=15_000) as chooser:
+                    page.mouse.click(center_x, center_y)
+                
+                chooser.value.set_files(str(video_file))
+                human_sleep(3.0, 4.0)
+                print("? Successfully uploaded video via icon click")
+                return True
+    except Exception as exc:
+        print(f"[WARN] Icon click failed: {exc}")
     
-    print("\n[HINT] Please check if:")
-    print("  1. The Pikaswaps page has fully loaded")
-    print("  2. The upload area is visible on screen")
-    print("  3. The file input element is present in the DOM")
-    print("  4. Check the debug screenshots in: {}/debug_screenshots/".format(DOWNLOAD_DIR))
+    # Method 4: Traditional label click
+    print("\n[METHOD 4] Traditional label click...")
+    try:
+        label_selector = "label[for='modify-region-video']"
+        with page.expect_file_chooser(timeout=15_000) as chooser:
+            page.click(label_selector, timeout=ACTION_TIMEOUT)
+        
+        chooser.value.set_files(str(video_file))
+        human_sleep(3.0, 4.0)
+        print("? Successfully uploaded video via label click")
+        return True
+    except Exception as exc:
+        print(f"[WARN] Label click failed: {exc}")
     
+    print("\n[ERROR] All upload methods failed")
+    save_debug_screenshot(page, "upload_failed")
     return False
 
 
 def fill_prompt(page: Page, prompt_text: str) -> bool:
-    """Step 3: Fill prompt text in textarea"""
+    """Step 3: Fill prompt textarea"""
     print(f"[STEP 3] Filling prompt: {prompt_text[:50]}...")
     
-    # Try multiple selectors for the prompt field
-    prompt_selectors = [
-        SELECTORS["prompt_textarea"],
-        "#promptText",
-        "textarea[name='promptText']",
-        "textarea[placeholder*='swap']",
-        "textarea",
-    ]
+    prompt_selector = "#promptText"
     
-    for selector in prompt_selectors:
-        try:
-            # Wait for textarea to be visible
-            if not page.is_visible(selector, timeout=3_000):
-                continue
+    try:
+        # Wait for textarea
+        page.wait_for_selector(prompt_selector, state="visible", timeout=10_000)
+        
+        # Click to focus
+        page.click(prompt_selector, timeout=ACTION_TIMEOUT)
+        human_sleep(0.3, 0.6)
+        
+        # Clear and fill
+        page.fill(prompt_selector, "", timeout=ACTION_TIMEOUT)
+        page.fill(prompt_selector, prompt_text, timeout=ACTION_TIMEOUT)
+        human_sleep(0.5, 1.0)
+        
+        # Verify
+        current_value = page.input_value(prompt_selector)
+        if current_value == prompt_text:
+            print("? Successfully filled prompt")
+            return True
+        else:
+            print(f"[WARN] Text mismatch: expected {len(prompt_text)} chars, got {len(current_value)}")
+            # Still return True if we got something
+            return len(current_value) > 0
             
-            print(f"[TRY] Using selector: {selector}")
-            
-            # Click to focus
-            page.click(selector, timeout=ACTION_TIMEOUT)
-            human_sleep(0.3, 0.6)
-            
-            # Clear existing content
-            page.evaluate(f"document.querySelector('{selector}').value = ''")
-            
-            # Fill new content
-            page.fill(selector, prompt_text, timeout=ACTION_TIMEOUT)
-            human_sleep(0.5, 1.0)
-            
-            # Verify content was filled
-            current_value = page.input_value(selector)
-            if current_value == prompt_text:
-                print("? Successfully filled prompt")
-                return True
-            else:
-                print(f"[WARN] Filled text doesn't match. Expected length: {len(prompt_text)}, got: {len(current_value)}")
-        except Exception as exc:
-            print(f"[INFO] Selector {selector} failed: {exc}")
-            continue
-    
-    print("[ERROR] Failed to fill prompt with all selectors")
-    return False
+    except Exception as exc:
+        print(f"[ERROR] Failed to fill prompt: {exc}")
+        return False
 
 
 def click_generate_button(page: Page) -> bool:
-    """Step 4: Click generate button with the sparkle icon"""
+    """Step 4: Click generate button"""
     print("[STEP 4] Clicking generate button...")
     
-    # Try multiple possible selectors for the generate button
+    # Try multiple selectors
     button_selectors = [
-        # Look for button containing the specific span with SVG
         "button:has(span.absolute.left-0.top-0:has(svg[fill='white']))",
-        "button:has(span.fill-dark-background)",
         "button:has(span.bg-accent-primary)",
-        # Try finding the button by the SVG icon
         "button:has(svg[fill='white'])",
-        "button:has(svg path[d*='M8.90747'])",  # SVG path from the sparkle icon
-        # Generic submit/generate buttons
         "button[type='submit']",
         "form button:not([type='button'])",
     ]
     
     for selector in button_selectors:
         try:
-            print(f"[TRY] Selector: {selector}")
-            
             if not page.is_visible(selector, timeout=2_000):
                 continue
             
-            # Get the button element
+            print(f"[TRY] Clicking button: {selector}")
             button = page.locator(selector).first
             
             # Scroll into view
             button.scroll_into_view_if_needed(timeout=2_000)
             human_sleep(0.5, 1.0)
             
-            # Click the button
+            # Click
             button.click(timeout=ACTION_TIMEOUT)
             human_sleep(2.0, 3.0)
             
-            print(f"\u2713 Successfully clicked generate button (selector: {selector})")
+            print(f"? Successfully clicked generate button")
             return True
         except Exception as exc:
             print(f"[INFO] Selector {selector} failed: {exc}")
             continue
     
-    # Last attempt: try to find any button near the prompt textarea
-    try:
-        print("[TRY] Looking for button near prompt textarea...")
-        # Find textarea, then look for nearby button
-        page.click("form button", timeout=ACTION_TIMEOUT)
-        human_sleep(2.0, 3.0)
-        print("\u2713 Successfully clicked generate button (form button)")
-        return True
-    except Exception as exc:
-        print(f"[ERROR] All generate button selectors failed: {exc}")
-    
+    print("[ERROR] Could not find generate button")
     return False
 
 
@@ -416,9 +304,9 @@ def process_single_task(page: Page, task: dict, task_num: int, total: int) -> bo
     print(f"[TASK {task_num}/{total}] {task['filename']}")
     print(f"{'='*60}")
     
-    # Step 1: Click Pikaswaps button
+    # Step 1: Click Pikaswaps
     if not click_pikaswaps_button(page):
-        print("[FAILED] Could not enter Pikaswaps feature")
+        print("[FAILED] Could not enter Pikaswaps")
         return False
     
     # Step 2: Upload video
@@ -431,33 +319,30 @@ def process_single_task(page: Page, task: dict, task_num: int, total: int) -> bo
         print("[FAILED] Prompt fill failed")
         return False
     
-    # Step 4: Click generate button
+    # Step 4: Click generate
     if not click_generate_button(page):
-        print("[FAILED] Could not click generate button")
+        print("[FAILED] Generate button click failed")
         return False
     
-    print(f"? Task {task_num} completed: Generation request submitted")
+    print(f"? Task {task_num} completed successfully")
     return True
 
 
 def main() -> None:
     """Main function"""
     print("="*60)
-    print("Pika PikaSwap Automation Script - Simplified Version")
+    print("Pika PikaSwap Automation - Coordinate Click Version")
     print("="*60)
     
-    # Ensure output directory exists
     ensure_dir(DOWNLOAD_DIR)
     
-    # Load task list
     tasks = load_tasks(SHEET_PATH, VIDEO_DIR)
     if not tasks:
-        print("[ERROR] No executable tasks found")
+        print("[ERROR] No tasks found")
         return
     
-    print(f"\n[INFO] Number of tasks to process: {len(tasks)}")
+    print(f"\n[INFO] Tasks to process: {len(tasks)}")
     
-    # Launch browser
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch_persistent_context(
             USER_DATA_DIR,
@@ -472,7 +357,6 @@ def main() -> None:
         page.set_default_timeout(ACTION_TIMEOUT)
         page.set_default_navigation_timeout(NAV_TIMEOUT)
         
-        # Navigate to Pika app
         print(f"\n[NAV] Opening {PIKA_APP_URL}...")
         try:
             page.goto(PIKA_APP_URL, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
@@ -484,7 +368,7 @@ def main() -> None:
         
         human_sleep(2.0, 3.0)
         
-        # Process each task
+        # Process tasks
         success_count = 0
         for idx, task in enumerate(tasks, start=1):
             if process_single_task(page, task, idx, len(tasks)):
@@ -492,10 +376,10 @@ def main() -> None:
             
             # Wait between tasks
             if idx < len(tasks):
-                print(f"\nWaiting 10 seconds before processing next task...")
+                print(f"\nWaiting 10 seconds before next task...")
                 time.sleep(10)
                 
-                # Re-navigate to app page
+                # Re-navigate
                 try:
                     page.goto(PIKA_APP_URL, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
                     human_sleep(2.0, 3.0)
@@ -506,12 +390,11 @@ def main() -> None:
         print(f"All tasks processed! Success: {success_count}/{len(tasks)}")
         print(f"{'='*60}")
         
-        # Keep browser open to view results
-        print("\nBrowser will remain open, press Ctrl+C to exit...")
+        print("\nBrowser will remain open. Press Ctrl+C to exit...")
         try:
-            time.sleep(3600)  # Keep open for 1 hour
+            time.sleep(3600)
         except KeyboardInterrupt:
-            print("\nClosing browser...")
+            print("\nClosing...")
         
         browser.close()
 
