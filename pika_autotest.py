@@ -13,7 +13,6 @@ Assumptions:
 - Playwright (sync API) and pandas are installed in the environment
 """
 
-import os
 import sys
 import time
 import re
@@ -40,10 +39,6 @@ PIKA_APP_URLS = [
 ]
 
 DEFAULT_JOB_LABEL = datetime.now().strftime("pika_%Y%m%d_%H%M%S")
-
-PIKA_LOGIN_URL = "https://pika.art/login"
-PIKA_EMAIL = os.environ.get("PIKA_EMAIL", "mjanwfdj7323@outlook.com")
-PIKA_PASSWORD = os.environ.get("PIKA_PASSWORD", "Yguyl51168.")
 
 
 # ===== Timing / timeouts =====
@@ -79,16 +74,13 @@ SELECTORS = {
     "download_banner": "text=/Download|\\u4fdd\\u5b58|\\u5bfc\\u51fa|Export/i",
     "cookie_accept": "button:has-text('Accept'), button:has-text('Agree'), button:has-text('Allow'), button[data-testid='cookies-accept']",
     "dismiss_toast": "button[aria-label='Close'], button:has-text('Dismiss')",
-    "login_trigger": "a:has-text('Log in'), a:has-text('Sign in'), button:has-text('Log in'), button:has-text('Sign in')",
-    "email_input": "input[name='email'], input[type='email']",
-    "password_input": "input[name='password'], input[type='password']",
-    "login_submit": "button:has-text('Continue'), button:has-text('Log in'), button:has-text('Sign in')",
-    "account_badge": "[data-testid='navbar-user-menu'], button:has-text('Account'), img[alt*='avatar']",
     "pikaswap_prompt": "#promptText",
     "pikaswap_video_input": "#modify-region-video",
     "pikaswap_video_label": "label[for='modify-region-video']",
     "pikaswap_start_button": "button:has-text('\\u5f00\\u59cb\\u7f16\\u8f91'), button:has-text('Start editing'), [role='button']:has-text('Start editing')",
     "nav_pikaswaps": "button:has-text('Pikaswaps'), [role='button']:has-text('Pikaswaps'), a:has-text('Pikaswaps')",
+    "pikaswap_upload_icon": "label[for='modify-region-video'] .group.relative.flex",
+    "pikaswap_generate_overlay": "button span.fill-dark-background",
 }
 
 
@@ -206,115 +198,6 @@ def dismiss_toasts(page: Page) -> None:
         pass
 
 
-def is_logged_in(page: Page) -> bool:
-    try:
-        if page.is_visible(SELECTORS["account_badge"], timeout=1_500):
-            return True
-    except Exception:
-        pass
-
-    try:
-        if not page.is_visible(SELECTORS["login_trigger"], timeout=1_500):
-            # Heuristic: absence of login button + presence of creation controls implies logged in
-            if page.is_visible(SELECTORS["new_video"], timeout=1_000):
-                return True
-    except Exception:
-        pass
-
-    return False
-
-
-def perform_login(page: Page) -> bool:
-    if not PIKA_EMAIL or not PIKA_PASSWORD:
-        print("[ERROR] Missing PIKA_EMAIL or PIKA_PASSWORD configuration.")
-        return False
-
-    try:
-        if not page.is_visible(SELECTORS["email_input"], timeout=5_000):
-            print("[ERROR] Login form not detected on the page.")
-            return False
-    except Exception as exc:
-        print("[ERROR] Unexpected error locating login form:", exc)
-        return False
-
-    try:
-        page.fill(SELECTORS["email_input"], PIKA_EMAIL, timeout=ACTION_TIMEOUT)
-    except Exception:
-        try:
-            email_box = page.locator(SELECTORS["email_input"]).first
-            email_box.click(timeout=ACTION_TIMEOUT)
-            page.keyboard.press("Control+A")
-            page.keyboard.press("Backspace")
-            page.keyboard.type(PIKA_EMAIL, delay=18)
-        except Exception as exc:
-            print("[ERROR] Unable to fill email field:", exc)
-            return False
-
-    try:
-        page.fill(SELECTORS["password_input"], PIKA_PASSWORD, timeout=ACTION_TIMEOUT)
-    except Exception:
-        try:
-            password_box = page.locator(SELECTORS["password_input"]).first
-            password_box.click(timeout=ACTION_TIMEOUT)
-            page.keyboard.press("Control+A")
-            page.keyboard.press("Backspace")
-            page.keyboard.type(PIKA_PASSWORD, delay=18)
-        except Exception as exc:
-            print("[ERROR] Unable to fill password field:", exc)
-            return False
-
-    try:
-        if page.is_visible(SELECTORS["login_submit"], timeout=1_500):
-            page.click(SELECTORS["login_submit"])
-        else:
-            page.keyboard.press("Enter")
-    except Exception as exc:
-        print("[WARN] Login submit interaction encountered an issue:", exc)
-        try:
-            page.keyboard.press("Enter")
-        except Exception:
-            pass
-
-    for _ in range(30):
-        if is_logged_in(page):
-            print("[STEP] Login successful.")
-            return True
-        time.sleep(1.5)
-
-    print("[ERROR] Login attempt timed out. Please verify credentials or UI changes.")
-    return False
-
-
-def ensure_logged_in(page: Page) -> bool:
-    if is_logged_in(page):
-        print("[STEP] Detected existing authenticated session.")
-        return True
-
-    try:
-        if page.is_visible(SELECTORS["login_trigger"], timeout=3_000):
-            page.click(SELECTORS["login_trigger"])
-            human_sleep()
-    except Exception as exc:
-        print("[WARN] Unable to trigger login dialog via navbar:", exc)
-
-    if not page.is_visible(SELECTORS["email_input"], timeout=5_000):
-        if not safe_goto(page, PIKA_LOGIN_URL):
-            print("[ERROR] Failed to navigate to the login page.")
-            return False
-        human_sleep(0.8, 1.6)
-
-    if not perform_login(page):
-        return False
-
-    # Provide a small buffer for post-login redirects
-    human_sleep(1.0, 2.0)
-    if not is_logged_in(page):
-        print("[WARN] Login did not yield an authenticated state. Re-check UI manually.")
-        return False
-
-    return True
-
-
 def ensure_studio_ready(page: Page) -> bool:
     """Make sure the script is inside the Pika studio workspace."""
 
@@ -373,6 +256,78 @@ def open_pikaswaps_feature(page: Page) -> bool:
 
     print("[WARN] Unable to locate the Pikaswaps button. Please confirm the UI layout.")
     return False
+
+
+def run_pikaswap_flow(page: Page, prompt_text: Optional[str], video_path: Optional[str]) -> bool:
+    """?????????????????????????? ????????"""
+
+    success = True
+
+    if video_path:
+        video_file = Path(video_path)
+        if not video_file.exists():
+            print(f"[WARN] PikaSwap ??????{video_path}")
+            success = False
+        else:
+            try:
+                with page.expect_file_chooser(timeout=15_000) as chooser:
+                    page.click(SELECTORS["pikaswap_upload_icon"])
+                chooser.value.set_files(str(video_file))
+                print(f"[STEP] ???????????{video_file}")
+            except Exception as exc:
+                print("[INFO] ??????????????????? input?", exc)
+                try:
+                    page.set_input_files(SELECTORS["pikaswap_video_input"], str(video_file))
+                    print(f"[STEP] ???????????{video_file}")
+                except Exception as exc2:
+                    print("[ERROR] ???????", exc2)
+                    success = False
+    else:
+        print("[WARN] ??? PikaSwap ?????")
+        success = False
+
+    if prompt_text:
+        try:
+            prompt_box = page.locator(SELECTORS["pikaswap_prompt"]).first
+            prompt_box.click(timeout=ACTION_TIMEOUT)
+            try:
+                page.keyboard.press("Control+A")
+                page.keyboard.press("Backspace")
+            except Exception:
+                pass
+            prompt_box.fill(prompt_text, timeout=ACTION_TIMEOUT)
+            print("[STEP] ??? PikaSwap ?????")
+        except Exception as exc:
+            print("[ERROR] ?????????", exc)
+            success = False
+    else:
+        print("[WARN] ??? PikaSwap ?????")
+        success = False
+
+    start_clicked = False
+    try:
+        if page.is_visible(SELECTORS["pikaswap_start_button"], timeout=2_000):
+            page.click(SELECTORS["pikaswap_start_button"])
+            start_clicked = True
+            print("[STEP] ????????????")
+    except Exception as exc:
+        print("[INFO] ???????????????", exc)
+
+    if not start_clicked:
+        try:
+            overlay = page.locator(SELECTORS["pikaswap_generate_overlay"]).first
+            if overlay.is_visible(timeout=1_500):
+                overlay.click()
+                start_clicked = True
+                print("[STEP] ??????????????")
+        except Exception as exc:
+            print("[INFO] ????????", exc)
+
+    if not start_clicked:
+        print("[WARN] ?????????????")
+        success = False
+
+    return success and start_clicked
 
 
 def upload_clip(page: Page, file_path: str) -> bool:
@@ -765,17 +720,14 @@ def main() -> None:
         page.set_default_timeout(ACTION_TIMEOUT)
         page.set_default_navigation_timeout(NAV_TIMEOUT)
 
-        print("[STEP] Opening Pika home page...")
-        if not safe_goto(page, PIKA_HOME_URL):
-            print("[ERROR] Unable to reach Pika website.")
+        entry_url = PIKA_APP_URLS[0] if PIKA_APP_URLS else PIKA_HOME_URL
+        print(f"[STEP] Opening Pika workspace at {entry_url}...")
+        if not safe_goto(page, entry_url):
+            print("[ERROR] Unable to reach Pika workspace.")
             return
 
         accept_cookies(page)
         time.sleep(2)
-
-        if not ensure_logged_in(page):
-            print("[ERROR] Automatic login failed. Please verify credentials and rerun.")
-            return
 
         for idx, task in enumerate(tasks, start=1):
             print(f"\n[JOB {idx}/{len(tasks)}] {task['filename']}")
