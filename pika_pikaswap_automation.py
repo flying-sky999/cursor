@@ -235,18 +235,69 @@ def upload_video(page: Page, video_path: str) -> bool:
     except Exception as exc:
         print(f"[WARN] Fixed coordinate click at (677, 396) failed: {exc}")
     
-    # Method 2: Try direct file input
-    print("\n[METHOD 2] Trying direct file input...")
+    # Method 2: Force upload to hidden input element
+    print("\n[METHOD 2] Forcing file upload to hidden input...")
     try:
-        input_selector = "#modify-region-video"
-        if page.locator(input_selector).count() > 0:
-            print(f"[TRY] Setting files directly to input")
-            page.set_input_files(input_selector, str(video_file), timeout=10_000)
-            human_sleep(3.0, 4.0)
-            print("? Successfully uploaded video via direct input")
-            return True
+        # Try to find and manipulate the hidden input element
+        input_selectors = [
+            "#modify-region-video",
+            "input[type='file']",
+            "input[accept*='video']",
+        ]
+        
+        for input_selector in input_selectors:
+            try:
+                input_count = page.locator(input_selector).count()
+                if input_count == 0:
+                    continue
+                
+                print(f"[TRY] Found {input_count} input(s): {input_selector}")
+                
+                # Step 1: Make hidden input visible using JavaScript
+                print("[INFO] Unhiding input element...")
+                page.evaluate(f"""
+                    const inputs = document.querySelectorAll('{input_selector}');
+                    inputs.forEach(input => {{
+                        input.style.display = 'block';
+                        input.style.visibility = 'visible';
+                        input.style.opacity = '1';
+                        input.style.position = 'relative';
+                        input.style.width = 'auto';
+                        input.style.height = 'auto';
+                        input.removeAttribute('hidden');
+                    }});
+                """)
+                human_sleep(0.5, 1.0)
+                
+                # Step 2: Set files directly
+                print(f"[TRY] Setting files to unhidden input...")
+                page.set_input_files(input_selector, str(video_file), timeout=10_000)
+                human_sleep(3.0, 4.0)
+                print("? Successfully uploaded video via forced unhidden input")
+                return True
+                
+            except Exception as exc:
+                print(f"[INFO] Selector {input_selector} failed: {exc}")
+                
+                # Try JavaScript file assignment as last resort for this selector
+                try:
+                    print(f"[TRY] JavaScript file assignment for {input_selector}...")
+                    # This won't actually set the File object (security restriction)
+                    # but may trigger change events
+                    page.evaluate(f"""
+                        const input = document.querySelector('{input_selector}');
+                        if (input) {{
+                            const event = new Event('change', {{ bubbles: true }});
+                            input.dispatchEvent(event);
+                        }}
+                    """)
+                except Exception:
+                    pass
+                
+                continue
+                
     except Exception as exc:
-        print(f"[WARN] Direct input failed: {exc}")
+        print(f"[WARN] Forced input method failed: {exc}")
     
     # Method 3: Try alternative coordinates near (677, 396)
     print("\n[METHOD 3] Trying alternative coordinates...")
