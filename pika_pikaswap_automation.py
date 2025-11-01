@@ -119,7 +119,7 @@ def click_pikaswaps_button(page: Page) -> bool:
 
 
 def upload_video(page: Page, video_path: str) -> bool:
-    """Step 2: Upload video by clicking at label coordinates"""
+    """Step 2: Upload video by clicking at fixed coordinates (677, 396)"""
     print(f"[STEP 2] Uploading video: {video_path}")
     
     video_file = Path(video_path)
@@ -130,46 +130,35 @@ def upload_video(page: Page, video_path: str) -> bool:
     print(f"[DEBUG] Video file size: {video_file.stat().st_size / (1024*1024):.2f} MB")
     save_debug_screenshot(page, "before_upload")
     
-    # Method 1: Click at coordinates of upload label (PRIMARY METHOD)
-    print("\n[METHOD 1] Clicking at upload label coordinates...")
+    # Method 1: Click at fixed coordinates (677, 396) - PRIMARY METHOD
+    print("\n[METHOD 1] Clicking at fixed coordinates (677, 396)...")
     try:
-        label_selector = "label[for='modify-region-video']"
+        # Fixed coordinates for upload button
+        upload_x = 677
+        upload_y = 396
         
-        # Wait for label to be present
-        page.wait_for_selector(label_selector, state="visible", timeout=10_000)
+        print(f"[INFO] Clicking at fixed position: ({upload_x}, {upload_y})")
         
-        label = page.locator(label_selector).first
+        # Wait a moment for UI to be ready
+        human_sleep(1.0, 1.5)
         
-        # Get bounding box
-        box = label.bounding_box()
-        if box is None:
-            raise Exception("Could not get bounding box")
-        
-        # Calculate center coordinates
-        center_x = box['x'] + box['width'] / 2
-        center_y = box['y'] + box['height'] / 2
-        
-        print(f"[INFO] Label dimensions: x={box['x']:.1f}, y={box['y']:.1f}, w={box['width']:.1f}, h={box['height']:.1f}")
-        print(f"[INFO] Clicking at center: ({center_x:.1f}, {center_y:.1f})")
-        
-        # Scroll into view first
-        label.scroll_into_view_if_needed()
-        human_sleep(0.5, 1.0)
-        
-        # Click at coordinates and wait for file chooser
+        # Click at the fixed coordinates and expect file chooser
         with page.expect_file_chooser(timeout=15_000) as chooser:
-            page.mouse.click(center_x, center_y)
+            page.mouse.click(upload_x, upload_y)
         
-        # Set the file
+        # Select the video file from local folder
         chooser.value.set_files(str(video_file))
+        print(f"[INFO] File selected: {video_file.name}")
+        
+        # Wait for upload to process
         human_sleep(3.0, 4.0)
         
-        print("? Successfully uploaded video via coordinate click")
+        print("? Successfully uploaded video via fixed coordinates (677, 396)")
         save_debug_screenshot(page, "after_upload_success")
         return True
         
     except Exception as exc:
-        print(f"[WARN] Coordinate click failed: {exc}")
+        print(f"[WARN] Fixed coordinate click at (677, 396) failed: {exc}")
     
     # Method 2: Try direct file input
     print("\n[METHOD 2] Trying direct file input...")
@@ -184,27 +173,32 @@ def upload_video(page: Page, video_path: str) -> bool:
     except Exception as exc:
         print(f"[WARN] Direct input failed: {exc}")
     
-    # Method 3: Click the upload icon div
-    print("\n[METHOD 3] Clicking upload icon...")
+    # Method 3: Try alternative coordinates near (677, 396)
+    print("\n[METHOD 3] Trying alternative coordinates...")
     try:
-        icon_selector = "label[for='modify-region-video'] div.group.relative.flex"
-        if page.locator(icon_selector).count() > 0:
-            icon = page.locator(icon_selector).first
-            box = icon.bounding_box()
-            if box:
-                center_x = box['x'] + box['width'] / 2
-                center_y = box['y'] + box['height'] / 2
-                print(f"[INFO] Clicking icon at: ({center_x:.1f}, {center_y:.1f})")
-                
-                with page.expect_file_chooser(timeout=15_000) as chooser:
-                    page.mouse.click(center_x, center_y)
+        # Try clicking at slightly different positions around the original point
+        alternative_positions = [
+            (677, 380),  # Slightly above
+            (677, 410),  # Slightly below
+            (660, 396),  # Slightly left
+            (694, 396),  # Slightly right
+            (677, 370),  # More above (icon area)
+        ]
+        
+        for x, y in alternative_positions:
+            try:
+                print(f"[TRY] Clicking at alternative position: ({x}, {y})")
+                with page.expect_file_chooser(timeout=10_000) as chooser:
+                    page.mouse.click(x, y)
                 
                 chooser.value.set_files(str(video_file))
                 human_sleep(3.0, 4.0)
-                print("? Successfully uploaded video via icon click")
+                print(f"? Successfully uploaded video at ({x}, {y})")
                 return True
+            except Exception:
+                continue
     except Exception as exc:
-        print(f"[WARN] Icon click failed: {exc}")
+        print(f"[WARN] Alternative coordinates failed: {exc}")
     
     # Method 4: Traditional label click
     print("\n[METHOD 4] Traditional label click...")
