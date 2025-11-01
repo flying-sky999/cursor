@@ -84,6 +84,10 @@ SELECTORS = {
     "password_input": "input[name='password'], input[type='password']",
     "login_submit": "button:has-text('Continue'), button:has-text('Log in'), button:has-text('Sign in')",
     "account_badge": "[data-testid='navbar-user-menu'], button:has-text('Account'), img[alt*='avatar']",
+    "pikaswap_prompt": "#promptText",
+    "pikaswap_video_input": "#modify-region-video",
+    "pikaswap_video_label": "label[for='modify-region-video']",
+    "pikaswap_start_button": "button:has-text('????'), button:has-text('Start editing'), [role='button']:has-text('Start editing')",
 }
 
 
@@ -364,6 +368,73 @@ def upload_clip(page: Page, file_path: str) -> bool:
 
     print("[INFO] Upload action skipped (control may not be required).")
     return False
+
+
+def run_pikaswap_flow(page: Page, prompt_text: Optional[str], video_path: Optional[str]) -> bool:
+    """Fill prompt, upload swap video, and click the Start Editing control inside the PikaSwap UI."""
+
+    success = True
+
+    if prompt_text:
+        try:
+            page.fill(SELECTORS["pikaswap_prompt"], prompt_text, timeout=ACTION_TIMEOUT)
+            print("[STEP] Filled PikaSwap prompt textarea.")
+        except Exception:
+            try:
+                prompt_box = page.locator(SELECTORS["pikaswap_prompt"]).first
+                prompt_box.click(timeout=ACTION_TIMEOUT)
+                page.keyboard.press("Control+A")
+                page.keyboard.press("Backspace")
+                page.keyboard.type(prompt_text, delay=16)
+                print("[STEP] Typed PikaSwap prompt via keyboard fallback.")
+            except Exception as exc:
+                print("[WARN] Unable to populate PikaSwap prompt:", exc)
+                success = False
+
+    if video_path:
+        video_file = Path(video_path)
+        if not video_file.exists():
+            print(f"[WARN] PikaSwap video missing locally: {video_path}")
+            success = False
+        else:
+            try:
+                page.set_input_files(SELECTORS["pikaswap_video_input"], str(video_file))
+                print(f"[STEP] Assigned video to PikaSwap input: {video_file}")
+            except Exception as exc:
+                print("[WARN] Direct set_input_files failed, attempting label click:", exc)
+                try:
+                    with page.expect_file_chooser(timeout=15_000) as chooser:
+                        page.click(SELECTORS["pikaswap_video_label"])
+                    chooser.value.set_files(str(video_file))
+                    print(f"[STEP] Uploaded video via label fallback: {video_file}")
+                except Exception as exc2:
+                    print("[ERROR] Unable to attach video for PikaSwap:", exc2)
+                    success = False
+
+    # Try to click the Start Editing button if it exists.
+    start_selectors = [
+        SELECTORS["pikaswap_start_button"],
+        "button:has-text('????')",
+        "button:has-text('Start editing')",
+        "[role='button']:has-text('Start editing')",
+    ]
+
+    clicked = False
+    for sel in start_selectors:
+        try:
+            if page.is_visible(sel, timeout=1_200):
+                page.click(sel)
+                clicked = True
+                print("[STEP] Triggered PikaSwap start/edit button.")
+                break
+        except Exception:
+            continue
+
+    if not clicked:
+        print("[WARN] Could not locate a visible 'Start editing' control. Please verify the selector.")
+        success = False
+
+    return success
 
 
 def find_prompt_input(page: Page) -> Optional[str]:
