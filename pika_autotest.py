@@ -87,7 +87,8 @@ SELECTORS = {
     "pikaswap_prompt": "#promptText",
     "pikaswap_video_input": "#modify-region-video",
     "pikaswap_video_label": "label[for='modify-region-video']",
-    "pikaswap_start_button": "button:has-text('????'), button:has-text('Start editing'), [role='button']:has-text('Start editing')",
+    "pikaswap_start_button": "button:has-text('\\u5f00\\u59cb\\u7f16\\u8f91'), button:has-text('Start editing'), [role='button']:has-text('Start editing')",
+    "nav_pikaswaps": "button:has-text('Pikaswaps'), [role='button']:has-text('Pikaswaps'), a:has-text('Pikaswaps')",
 }
 
 
@@ -338,6 +339,39 @@ def ensure_studio_ready(page: Page) -> bool:
                 return True
 
     print("[ERROR] Unable to enter Pika studio workspace. Please confirm login state.")
+    return False
+
+
+def open_pikaswaps_feature(page: Page) -> bool:
+    """Attempt to switch to the Pikaswaps tool within the workspace."""
+
+    try:
+        nav_locator = page.locator(SELECTORS["nav_pikaswaps"])
+        if nav_locator.count():
+            for idx in range(nav_locator.count()):
+                button = nav_locator.nth(idx)
+                try:
+                    if button.is_visible(timeout=1_500):
+                        button.click(timeout=ACTION_TIMEOUT)
+                        human_sleep(0.4, 0.9)
+                        print("[STEP] Switched to Pikaswaps tool via navbar.")
+                        return True
+                except Exception:
+                    continue
+    except Exception as exc:
+        print("[WARN] Pikaswaps navbar button lookup failed:", exc)
+
+    try:
+        fallback = page.get_by_role("button", name=re.compile(r"Pikaswaps", re.I)).first
+        if fallback.is_visible(timeout=2_000):
+            fallback.click(timeout=ACTION_TIMEOUT)
+            human_sleep(0.4, 0.9)
+            print("[STEP] Switched to Pikaswaps tool via fallback locator.")
+            return True
+    except Exception:
+        pass
+
+    print("[WARN] Unable to locate the Pikaswaps button. Please confirm the UI layout.")
     return False
 
 
@@ -748,6 +782,10 @@ def main() -> None:
 
             if not ensure_studio_ready(page):
                 print("[ERROR] Could not enter studio workspace for this task. Skipping.")
+                continue
+
+            if not open_pikaswaps_feature(page):
+                print("[WARN] Failed to activate Pikaswaps. Skipping this task.")
                 continue
 
             try:
