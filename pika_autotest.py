@@ -788,52 +788,13 @@ def main() -> None:
                 print("[WARN] Failed to activate Pikaswaps. Skipping this task.")
                 continue
 
-            try:
-                if page.is_visible(SELECTORS["new_video"], timeout=5_000):
-                    page.click(SELECTORS["new_video"])
-                    human_sleep()
-            except Exception as exc:
-                print("[WARN] Create-new entry misbehaved:", exc)
-
-            upload_clip(page, task["file_path"])
-
-            if not set_prompt(page, task["prompt"]):
-                print("[WARN] Prompt auto-fill failed. Please enter manually and press Enter to continue...")
-                input()
-
-            print(f"[STEP] Waiting {READY_DWELL_SEC}s of stability before triggering Generate...")
-            if not wait_generate_ready_then_click_once(page):
-                print("[WARN] Generate action did not fire. Skipping this task.")
-                continue
-
-            print(f"[STEP] Generate clicked. Idling for {MIN_RENDER_WAIT_SEC}s to allow rendering...")
-            waited = 0
-            while waited < MIN_RENDER_WAIT_SEC:
-                time.sleep(15)
-                waited += 15
-                print(f"[INFO] Render quiet wait: {waited}s / {MIN_RENDER_WAIT_SEC}s")
-
-            print("[STEP] Method A loop: detect -> click -> cooldown until success or timeout...")
-            cycle_start = time.time()
-            downloaded = False
-
-            while time.time() - cycle_start < JOB_TIMEOUT_SEC:
-                main_btn, chev_btn = wait_controls_method_A_only(page, A_STABLE_SEC)
-                if not main_btn and not chev_btn:
-                    print("[WARN] Method A did not find download controls yet. Retrying...")
-                    time.sleep(POLL_INTERVAL_SEC)
-                    continue
-
-                filename_prefix = f"{Path(task['filename']).stem}_{DEFAULT_JOB_LABEL}"
-                if try_download_via_A(page, filename_prefix, main_btn, chev_btn):
-                    downloaded = True
-                    break
-
-                print(f"[COOLDOWN] Download attempt failed. Cooling down for {CLICK_COOLDOWN_SEC}s...")
-                time.sleep(CLICK_COOLDOWN_SEC)
-
-            if not downloaded:
-                print("[INFO] Automatic download failed. Please retrieve the asset manually in the UI.")
+            flow_ok = run_pikaswap_flow(page, task.get("prompt"), task.get("file_path"))
+            if not flow_ok:
+                print("[WARN] Pikaswap automation incomplete. Please verify prompt/video inputs manually.")
+            else:
+                print("[DONE] Pikaswap prompt/video submitted and Start Editing triggered.")
+            time.sleep(2)
+            continue
 
         print("\n[DONE] All Pika tasks processed.")
         # browser.close()
