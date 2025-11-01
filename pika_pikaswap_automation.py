@@ -70,6 +70,19 @@ def ensure_dir(path: str) -> None:
     Path(path).mkdir(parents=True, exist_ok=True)
 
 
+def save_debug_screenshot(page: Page, name: str) -> None:
+    """Save a screenshot for debugging purposes"""
+    try:
+        screenshot_dir = Path(DOWNLOAD_DIR) / "debug_screenshots"
+        screenshot_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        screenshot_path = screenshot_dir / f"{name}_{timestamp}.png"
+        page.screenshot(path=str(screenshot_path))
+        print(f"[DEBUG] Screenshot saved: {screenshot_path}")
+    except Exception as e:
+        print(f"[WARN] Could not save screenshot: {e}")
+
+
 def load_tasks(sheet: str, video_dir: str) -> List[dict]:
     """Load task list from Excel sheet"""
     sheet_path = Path(sheet)
@@ -115,8 +128,19 @@ def click_pikaswaps_button(page: Page) -> bool:
         # Try using the provided selector
         page.wait_for_selector(SELECTORS["pikaswaps_button"], timeout=10_000)
         page.click(SELECTORS["pikaswaps_button"], timeout=ACTION_TIMEOUT)
-        human_sleep(1.0, 2.0)
         print("? Successfully clicked Pikaswaps button")
+        
+        # Wait for the Pikaswaps interface to load
+        print("[INFO] Waiting for Pikaswaps interface to load...")
+        human_sleep(3.0, 4.0)
+        
+        # Wait for form to be present
+        try:
+            page.wait_for_selector("form", timeout=10_000)
+            print("[INFO] Form detected, interface ready")
+        except Exception:
+            print("[WARN] Form not detected, but continuing...")
+        
         return True
     except Exception as exc:
         print(f"[ERROR] Failed to click Pikaswaps button: {exc}")
@@ -132,41 +156,155 @@ def upload_video(page: Page, video_path: str) -> bool:
         print(f"[ERROR] Video file does not exist: {video_path}")
         return False
     
-    # Try multiple methods to upload the video
-    methods = [
-        ("Clicking precise label selector", SELECTORS["video_upload_label"]),
-        ("Clicking simple form label", SELECTORS["video_upload_label_simple"]),
-        ("Clicking any label in form", "form label"),
-        ("Clicking label with upload icon", "label:has(svg)"),
+    print(f"[DEBUG] Video file size: {video_file.stat().st_size / (1024*1024):.2f} MB")
+    
+    # Save a screenshot before attempting upload
+    save_debug_screenshot(page, "before_upload")
+    
+    # First, let's check what upload elements are available on the page
+    print("[DEBUG] Checking available upload elements...")
+    try:
+        # Check for input[type=file]
+        file_inputs = page.locator("input[type='file']").count()
+        print(f"[DEBUG] Found {file_inputs} file input(s)")
+        
+        # Check for labels
+        labels = page.locator("label").count()
+        print(f"[DEBUG] Found {labels} label(s)")
+        
+        # Check for form
+        forms = page.locator("form").count()
+        print(f"[DEBUG] Found {forms} form(s)")
+    except Exception as e:
+        print(f"[DEBUG] Element check failed: {e}")
+    
+    # Method 1: Try direct file input first (most reliable)
+    print("\n[METHOD 1] Trying direct file input...")
+    input_selectors = [
+        "#modify-region-video",
+        "input[type='file']",
+        "input[accept*='video']",
+        "form input[type='file']",
     ]
     
-    for method_name, selector in methods:
+    for selector in input_selectors:
         try:
-            print(f"[TRY] {method_name}...")
-            # Wait a bit for UI to be ready
-            human_sleep(0.5, 1.0)
-            
-            with page.expect_file_chooser(timeout=15_000) as chooser:
-                page.click(selector, timeout=ACTION_TIMEOUT)
-            
-            chooser.value.set_files(str(video_file))
-            human_sleep(2.0, 3.0)
-            print(f"? Successfully uploaded video via {method_name}")
-            return True
+            if page.locator(selector).count() > 0:
+                print(f"[TRY] Direct input with selector: {selector}")
+                page.set_input_files(selector, str(video_file), timeout=10_000)
+                human_sleep(2.0, 3.0)
+                print(f"? Successfully uploaded video via direct input: {selector}")
+                return True
         except Exception as exc:
-            print(f"[INFO] {method_name} failed: {exc}")
-            continue
+            print(f"[INFO] Selector {selector} failed: {exc}")
     
-    # Last resort: try direct file input
+    # Method 2: Click label to trigger file chooser
+    print("\n[METHOD 2] Trying to click label elements...")
+    label_selectors = [
+        "label[for='modify-region-video']",
+        "form label",
+        "div.relative.mx-auto label",
+        "div.flex.flex-col.gap-3 label",
+        "label:has(svg)",
+        "label:has(div.group.relative.flex)",
+    ]
+    
+    for selector in label_selectors:
+        try:
+            label_count = page.locator(selector).count()
+            if label_count == 0:
+                continue
+                
+            print(f"[TRY] Clicking label: {selector} (found {label_count})")
+            
+            # Try each matching label
+            for idx in range(label_count):
+                try:
+                    label = page.locator(selector).nth(idx)
+                    if not label.is_visible():
+                        continue
+                    
+                    print(f"[TRY] Clicking label #{idx}...")
+                    with page.expect_file_chooser(timeout=15_000) as chooser:
+                        label.click(timeout=ACTION_TIMEOUT)
+                    
+                    chooser.value.set_files(str(video_file))
+                    human_sleep(2.0, 3.0)
+                    print(f"? Successfully uploaded video by clicking label #{idx}")
+                    return True
+                except Exception as exc:
+                    print(f"[INFO] Label #{idx} failed: {exc}")
+                    continue
+        except Exception as exc:
+            print(f"[INFO] Selector {selector} failed: {exc}")
+    
+    # Method 3: Click the div with upload icon
+    print("\n[METHOD 3] Trying to click upload icon div...")
+    div_selectors = [
+        "div.group.relative.flex.h-15.w-15",
+        "div.group.relative.flex:has(svg)",
+        "div:has(svg path[stroke='#fff'])",
+    ]
+    
+    for selector in div_selectors:
+        try:
+            if page.locator(selector).count() > 0:
+                print(f"[TRY] Clicking div: {selector}")
+                with page.expect_file_chooser(timeout=15_000) as chooser:
+                    page.click(selector, timeout=ACTION_TIMEOUT)
+                
+                chooser.value.set_files(str(video_file))
+                human_sleep(2.0, 3.0)
+                print(f"? Successfully uploaded video by clicking div")
+                return True
+        except Exception as exc:
+            print(f"[INFO] Selector {selector} failed: {exc}")
+    
+    # Method 4: JavaScript injection to trigger file input
+    print("\n[METHOD 4] Trying JavaScript injection...")
     try:
-        print("[TRY] Direct file input as fallback...")
-        page.set_input_files(SELECTORS["video_input"], str(video_file), timeout=ACTION_TIMEOUT)
-        human_sleep(2.0, 3.0)
-        print("? Successfully uploaded video via direct input")
-        return True
+        js_code = f"""
+        (filePath) => {{
+            const input = document.querySelector('input[type="file"]') || 
+                         document.querySelector('#modify-region-video');
+            if (input) {{
+                console.log('Found input via JS:', input);
+                return true;
+            }}
+            return false;
+        }}
+        """
+        found = page.evaluate(js_code)
+        if found:
+            print("[INFO] File input found via JS, trying to set files...")
+            page.set_input_files("input[type='file']", str(video_file))
+            human_sleep(2.0, 3.0)
+            print("? Successfully uploaded video via JavaScript")
+            return True
     except Exception as exc:
-        print(f"[ERROR] All upload methods failed: {exc}")
-        return False
+        print(f"[INFO] JavaScript method failed: {exc}")
+    
+    print("\n[ERROR] All upload methods exhausted. Cannot upload video.")
+    
+    # Save screenshot for debugging
+    save_debug_screenshot(page, "upload_failed")
+    
+    # Try to print relevant HTML for debugging
+    try:
+        print("\n[DEBUG] Dumping form HTML for inspection...")
+        form_html = page.locator("form").first.inner_html()
+        # Print first 500 chars
+        print(f"[DEBUG] Form HTML (first 500 chars):\n{form_html[:500]}")
+    except Exception as e:
+        print(f"[DEBUG] Could not retrieve form HTML: {e}")
+    
+    print("\n[HINT] Please check if:")
+    print("  1. The Pikaswaps page has fully loaded")
+    print("  2. The upload area is visible on screen")
+    print("  3. The file input element is present in the DOM")
+    print("  4. Check the debug screenshots in: {}/debug_screenshots/".format(DOWNLOAD_DIR))
+    
+    return False
 
 
 def fill_prompt(page: Page, prompt_text: str) -> bool:
