@@ -652,7 +652,7 @@
   </div>
 
   <figure class="full">
-    <img src="/opt/cursor/artifacts/assets/fig1_problem_overview.png" alt="长视频人物中心音画编辑、诊断与定点修复问题示意图" />
+    <img src="assets/fig1_problem_overview.png" alt="长视频人物中心音画编辑、诊断与定点修复问题示意图" />
     <figcaption><b>图 1.</b> 问题概览。相同人物在长视频中经历画内说话、画外发声和纯视觉修改等状态。通用 Agent 可以完成任务分解，但一次局部错误往往触发大范围重生成。PersonaRepair 将错误定位到“人物—台词—声纹—嘴部—时间”的具体关系，并仅重做必要的时间、空间与模态范围，同时保护其余内容。</figcaption>
   </figure>
 
@@ -728,7 +728,7 @@
 <section class="paper-page">
   <h2 class="page-title">PersonaRepair · 方法总览</h2>
   <figure class="full">
-    <img src="/opt/cursor/artifacts/assets/fig2_method_architecture.png" alt="PersonaRepair 系统架构" />
+    <img src="assets/fig2_method_architecture.png" alt="PersonaRepair 系统架构" />
     <figcaption><b>图 2.</b> 方法总览。蓝色模块为训练模块，灰色模块为冻结的专业编辑器，橙色模块为约束优化算法。共享 Audio-Video MLLM 使用状态 Adapter 编译人物中心状态，使用诊断 Adapter 比较源视频和编辑结果；工具效果模型预测候选操作的修复收益与副作用；优化器只将失败的时间—空间—模态范围送回编辑器。</figcaption>
   </figure>
 
@@ -840,7 +840,7 @@
     <p>\(\mathcal L_{\mathrm{sat}}\) 为约束满足二分类损失，\(\mathcal L_{\mathrm{type}}\) 为错误类型交叉熵，\(\mathcal L_{\mathrm{blame}}\) 为责任动作多标签损失。由于优化器直接使用概率，我们加入可微校准损失 \(\mathcal L_{\mathrm{cal}}\)，并在验证集上做温度缩放。低置信度约束不会自动重生成，而进入人工复核队列。</p>
 
     <figure>
-      <img src="/opt/cursor/artifacts/assets/fig3_diagnosis_repair.png" alt="三类音画错误的定位与定点修复" />
+      <img src="assets/fig3_diagnosis_repair.png" alt="三类音画错误的定位与定点修复" />
       <figcaption><b>图 3.</b> 三类典型诊断：画内台词的局部唇音错误、只允许改音频的画外音，以及跨镜头人物身份漂移。每次修复只开放必要区间、区域和模态，并复验未修改内容。</figcaption>
     </figure>
 
