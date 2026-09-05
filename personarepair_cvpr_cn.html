@@ -109,6 +109,45 @@
     }
     aside a:hover { color: #493f37; background: #ebe5da; }
     main { min-width: 0; }
+    .version-tabs {
+      position: sticky;
+      z-index: 15;
+      top: 68px;
+      display: inline-flex;
+      gap: 4px;
+      margin: 0 0 38px;
+      padding: 4px;
+      border: 1px solid #d8cfc4;
+      border-radius: 999px;
+      background: rgba(238, 233, 223, .92);
+      box-shadow: 0 8px 24px rgba(70, 52, 37, .06);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      font-family: Arial, "Noto Sans CJK SC", sans-serif;
+    }
+    .version-tab {
+      appearance: none;
+      padding: 9px 15px;
+      border: 0;
+      border-radius: 999px;
+      color: #71675e;
+      background: transparent;
+      cursor: pointer;
+      font: 600 12px/1 Arial, "Noto Sans CJK SC", sans-serif;
+      transition: color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+    .version-tab[aria-selected="true"] {
+      color: #4a372e;
+      background: #fbfaf6;
+      box-shadow: 0 2px 8px rgba(70, 52, 37, .09);
+    }
+    .version-tab .new {
+      margin-left: 5px;
+      color: #9b5137;
+      font-size: 9px;
+      letter-spacing: .07em;
+    }
+    .paper-panel[hidden], .toc-panel[hidden] { display: none; }
     .hero { padding: 16px 0 34px; }
     .eyebrow {
       margin-bottom: 17px;
@@ -282,6 +321,13 @@
       .brand { font-size: 16px; }
       .topbar a { padding: 5px 9px; font-size: 11px; }
       .layout { width: 100%; padding: 30px 19px 70px; }
+      .version-tabs {
+        top: 60px;
+        display: flex;
+        width: 100%;
+        margin-bottom: 27px;
+      }
+      .version-tab { flex: 1; padding: 9px 8px; }
       .hero { padding-top: 7px; }
       h1 { font-size: 37px; }
       .subtitle { font-size: 16px; }
@@ -315,20 +361,40 @@
 
   <div class="layout">
     <aside>
-      <div class="label">论文结构</div>
-      <a href="#abstract">摘要</a>
-      <a href="#introduction">1. 引言</a>
-      <a href="#related">2. 相关工作</a>
-      <a href="#method">3. PersonaRepair</a>
-      <a href="#locator">3.1 错误定位</a>
-      <a href="#effect">3.2 工具效果模型</a>
-      <a href="#repair">3.3 非退化修复</a>
-      <a href="#experiments">4. 实验</a>
-      <a href="#conclusion">5. 局限与结论</a>
-      <a href="#references">参考文献</a>
+      <div class="toc-panel" id="toc-original">
+        <div class="label">基础版结构</div>
+        <a href="#abstract">摘要</a>
+        <a href="#introduction">1. 引言</a>
+        <a href="#related">2. 相关工作</a>
+        <a href="#method">3. PersonaRepair</a>
+        <a href="#locator">3.1 错误定位</a>
+        <a href="#effect">3.2 工具效果模型</a>
+        <a href="#repair">3.3 非退化修复</a>
+        <a href="#experiments">4. 实验</a>
+        <a href="#conclusion">5. 局限与结论</a>
+        <a href="#references">参考文献</a>
+      </div>
+      <div class="toc-panel" id="toc-enhanced" hidden>
+        <div class="label">增强版结构</div>
+        <a href="#enhanced-abstract">摘要</a>
+        <a href="#enhanced-introduction">1. 引言</a>
+        <a href="#enhanced-related">2. 相关工作</a>
+        <a href="#enhanced-method">3. 方法</a>
+        <a href="#enhanced-diagnose">3.1 诊断 MLLM</a>
+        <a href="#enhanced-intervention">3.2 干预效果 MLLM</a>
+        <a href="#enhanced-repair">3.3 修复 MLLM</a>
+        <a href="#enhanced-experiments">4. 实验</a>
+        <a href="#enhanced-conclusion">5. 局限与结论</a>
+        <a href="#enhanced-references">参考文献</a>
+      </div>
     </aside>
 
     <main>
+      <nav class="version-tabs" role="tablist" aria-label="论文版本">
+        <button class="version-tab" id="tab-original" type="button" role="tab" aria-selected="true" aria-controls="paper-original">基础版</button>
+        <button class="version-tab" id="tab-enhanced" type="button" role="tab" aria-selected="false" aria-controls="paper-enhanced">增强版<span class="new">NEW</span></button>
+      </nav>
+      <div class="paper-panel" id="paper-original" role="tabpanel" aria-labelledby="tab-original">
       <header class="hero">
         <div class="eyebrow">中文论文草稿 · 结构参考 AVE-Compass / JarvisEvo 2026</div>
         <h1>PersonaRepair</h1>
@@ -527,6 +593,235 @@
       <footer class="footer">
         PersonaRepair 中文研究草稿 · 论文结构，文档式展示 · 实验结果尚未产生
       </footer>
+      </div>
+
+      <div class="paper-panel" id="paper-enhanced" role="tabpanel" aria-labelledby="tab-enhanced" hidden>
+        <header class="hero">
+          <div class="eyebrow">增强版中文论文草稿 · 随机干预蒸馏 + 五生成编辑器</div>
+          <h1>PersonaRepair-X</h1>
+          <p class="subtitle">面向随机长视频生成工具的干预式效果学习与在线单步修复</p>
+          <div class="authors">匿名投稿 · Paper ID ####</div>
+          <div class="draft">增强版与基础版并列保留。所有图片均为概念图，所有结果均为“待测”；正式投稿必须替换为真实输出和真实实验数据。</div>
+        </header>
+
+        <section class="abstract" id="enhanced-abstract">
+          <h2>摘要</h2>
+          <p>长视频音画编辑 Agent 通常通过评价反馈反复调用生成工具，但生成工具具有随机性、状态依赖和顺序交互：同一修复在不同随机种子下可能成功或失败，两个单独可靠的工具连续使用也可能破坏人物身份、音画同步或非目标内容。仅从 Agent 的历史调用日志学习会受到选择偏差影响，也无法回答“若改用另一工具、参数或顺序会怎样”。本文提出 PersonaRepair-X，一个以随机干预蒸馏为核心的长视频多人物修复 Agent。离线阶段，我们在合法动作空间中随机分配生成编辑器、参数、作用范围、顺序和随机种子，利用独立评价器测量人物、台词、声纹、唇音、背景和环境声约束的变化。Interventional Tool-Effect MLLM 学习动作序列在给定视频状态下的效果分布，而 Repair MLLM 从这些干预分支中学习一次性输出结构化修复程序。在线阶段，Diagnostic MLLM 定位失败，Tool-Effect MLLM 无需渲染候选即可预测修复收益、副作用、稳定性和成本，Repair MLLM 随后只调用一个选定生成方案。我们进一步引入跨镜头一致性和时序边界协调两个长视频专用编辑器，并建立同时评价修复成功、非目标破坏、在线生成次数和跨种子稳定性的协议。</p>
+        </section>
+
+        <section id="enhanced-introduction">
+          <h2>1. 引言</h2>
+          <p class="lead">生成式视频工具不是确定性函数。对同一个失败片段使用相同工具，可能因为随机种子、人物姿态和前序操作而产生完全不同的结果；因此，“这个工具通常很强”并不等于“这个工具此刻适合修复”。</p>
+
+          <p>现有音视频 Agent 已能将指令分解到视觉、语音和音频分支。AVE-Agent [1] 使用 Planner–Executor–Mixed Evaluator 构建任务拓扑并根据反馈重试；JarvisEvo [2] 通过多模态思维链和自评优化图像编辑策略；MMLVE-Agent [3] 面向多指令、多镜头视频保持跨镜头一致性。然而，这些方法主要依据工具说明、当前评价或历史轨迹选择下一步。实际日志存在系统性偏差：Agent 往往只在简单正脸场景调用人物工具，因而日志会高估该工具在侧脸、遮挡或多人物场景中的可靠性。更重要的是，日志很少包含“同一状态若换工具、换顺序或什么都不做”的对照。</p>
+
+          <figure>
+            <img src="assets/fig_enhanced_teaser_2026.png" alt="增强版 PersonaRepair-X 随机干预蒸馏与在线直接修复概念图" />
+            <figcaption><strong>图 E1.</strong> PersonaRepair-X 概览（概念流程，非真实结果）。离线阶段在五个冻结生成编辑器上进行受控随机干预，并由独立检查器记录目标增益、连带破坏和跨种子稳定性；在线阶段三个训练 MLLM 分别诊断、预测效果和开具修复程序，只执行一个选定生成方案。</figcaption>
+          </figure>
+
+          <p>PersonaRepair-X 将这种缺失视为实验设计问题。我们不让在线 Agent 逐一生成候选，而是在离线沙盒中对相同失败状态随机施加合法动作，估计：</p>
+          <div class="equation">
+            \(p(\Delta\mathcal C,\Omega,C\mid do(\mathbf a),x)\)，
+            <span class="eqno">(E1)</span>
+          </div>
+          <p>其中 \(x\) 是人物、镜头、声学和历史状态，\(\mathbf a\) 是生成编辑器、参数、顺序、范围与随机种子的结构化动作序列，\(\Delta\mathcal C\) 是音画约束变化，\(\Omega\) 是实际影响范围，\(C\) 是成本。干预知识随后被蒸馏到在线 MLLM，使用户侧仍保持“一次预测、一个修复程序、一次选定生成调用”。</p>
+
+          <div class="contributions">
+            <ol>
+              <li><strong>随机生成工具的受控干预协议。</strong> 在相同视频状态上随机化工具、参数、范围、顺序和种子，以独立评价得到有对照的约束转移数据，而非依赖有偏调用日志。</li>
+              <li><strong>Interventional Tool-Effect MLLM。</strong> 预测完整动作序列的目标增益、连带风险和跨种子稳定性，并显式建模工具顺序与二阶交互。</li>
+              <li><strong>干预知识蒸馏的在线修复。</strong> Diagnostic、Tool-Effect 和 Repair 三个训练 MLLM 协作，在线无需渲染多个候选，直接输出并执行一个低破坏修复程序。</li>
+            </ol>
+          </div>
+        </section>
+
+        <section id="enhanced-related">
+          <h2>2. 相关工作</h2>
+
+          <h3>2.1 音视频编辑 Agent 与长视频生成工具</h3>
+          <p>InstructAV2AV [4] 支持人物外观、音色和台词的组合式联合编辑，AVI-Edit [5] 处理实例级音画同步修改，AVE-Agent [1] 将跨模态指令编译为子任务 DAG 并使用局部反思和混合评价进行重试。MMLVE-Agent [3] 强调多镜头一致性和时空零破坏，Crayotter [6] 则记录蓝图、工具轨迹和中间渲染以支持局部重执行。PersonaRepair-X 使用这些生成模型或同类模型作为冻结工具；区别在于，它通过随机分配的离线对照学习工具的状态依赖效果，并把该经验蒸馏为在线单步决策。</p>
+
+          <h3>2.2 工具效果学习、因果干预与自进化 Agent</h3>
+          <p>Model-based RL、contextual bandit 和因果推断长期研究“执行动作会发生什么”，delta debugging 也通过删除操作定位失败原因。这些通用思想不能直接作为新颖性主张。视频生成工具带来三个专门困难：输出随机、一次调用昂贵、动作作用于连续时间—空间—模态范围。JarvisEvo [2] 通过 Editor–Evaluator 协同优化缓解静态奖励模型的 reward hacking；DreamGuard 和 JANUS 类工作研究工具使用前的未来风险。本文不声称首次风险预测，而聚焦<strong>随机音视频生成编辑器的多种子约束转移、顺序交互及其在线蒸馏</strong>。</p>
+        </section>
+
+        <section id="enhanced-method">
+          <h2>3. PersonaRepair-X</h2>
+          <p>系统包含三个训练 MLLM 和五个冻结生成编辑器。三个 MLLM 只理解、预测和决策，不产生视频像素或音频波形；所有媒体内容由生成编辑器输出。G1 负责人像与台词联合替换，G2 负责画外音，G3 负责纯视觉修改，G4 负责跨镜头身份与场景一致性，G5 负责局部补丁的画面、动作和音频边界协调。</p>
+
+          <table>
+            <thead>
+              <tr><th>模块</th><th>输入</th><th>输出</th><th>是否生成媒体</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Diagnostic MLLM</td><td>源/编辑视频、指令、轨迹</td><td>人物、关系、时间、错误</td><td>否</td></tr>
+              <tr><td>Tool-Effect MLLM</td><td>失败状态、候选动作序列</td><td>收益、风险、稳定性、成本</td><td>否</td></tr>
+              <tr><td>Repair MLLM</td><td>诊断、效果预测、保护约束</td><td>一个结构化修复程序</td><td>否</td></tr>
+              <tr><td>G1–G5</td><td>片段、条件、结构化程序</td><td>视频或音频</td><td>是</td></tr>
+            </tbody>
+          </table>
+
+          <figure>
+            <img src="assets/fig_enhanced_intervention_agent_2026.png" alt="PersonaRepair-X 离线干预学习与在线单步修复架构" />
+            <figcaption><strong>图 E2.</strong> 增强版方法。上：离线在同一失败状态上随机改变生成编辑器、参数、顺序、范围和种子，由独立 evaluator 产生约束差分；下：在线三个 MLLM 顺序完成诊断、效果预测和修复处方，只调用一个选定生成方案，再由独立验证器验收。</figcaption>
+          </figure>
+
+          <h3 id="enhanced-diagnose">3.1 Diagnostic MLLM：人物中心失败定位</h3>
+          <p>给定源视频 \(X\)、编辑结果 \(\hat X\)、指令 \(q\) 与动作轨迹 \(\tau\)，Diagnostic MLLM 输出失败记录 \(r=(p,\rho,I,e,\mathcal P)\)：人物 \(p\)、违反关系 \(\rho\)、证据区间 \(I\)、错误类型 \(e\) 以及当前仍正确的保护集合 \(\mathcal P\)。模型接收 ASR、声纹、active-speaker、lip-sync、ReID 和源—结果差异等独立证据 token，并在真实失败与可控故障上进行多任务 SFT。它不负责判断哪种修复最好，也不直接修改视频。</p>
+
+          <p>为避免自证，训练标签和最终评价至少包含一部分由独立工具及专业编辑师获得的数据；Diagnostic MLLM 的输出不得直接作为最终 ground truth。它在增强版中的作用仅是将长视频缩小为可处理的失败状态和保护条件。</p>
+
+          <h3 id="enhanced-intervention">3.2 Interventional Tool-Effect MLLM</h3>
+          <p><strong>受控采集。</strong> 对同一失败状态 \(x\)，采样器只在工具 schema 允许的动作中随机分配生成器 \(g\)、参数 \(\theta\)、作用范围 \(s\)、短序列顺序 \(\pi\) 和随机种子 \(z\)：</p>
+          <div class="equation">
+            \(\mathbf a=(g,\theta,s,\pi,z)\sim P_{\mathrm{int}}(\mathbf a\mid x)\)。
+            <span class="eqno">(E2)</span>
+          </div>
+          <p>随机不是任意生成无效动作。候选必须满足输入模态、人物、时间和工具前置条件；单工具覆盖不足时才采样长度为 2–3 的工具链。每个动作设置多个种子，估计均值、方差和失败尾部。为控制组合爆炸，优先采样模型不确定、工具作用范围重叠或可能改变最终选择的分支。</p>
+
+          <p><strong>独立结果测量。</strong> 对每个干预结果 \(Y_{\mathbf a,z}\)，独立 evaluator 产生约束变化：</p>
+          <div class="equation">
+            \(\Delta\mathbf c_{\mathbf a,z}
+            =J_{\mathrm{ind}}(Y_{\mathbf a,z})-J_{\mathrm{ind}}(\hat X)\)，
+            <span class="eqno">(E3)</span>
+          </div>
+          <p>其中 \(\mathbf c\) 同时覆盖目标完成、人物/声纹/台词绑定、唇音同步、跨镜头一致性、非目标保持和接缝自然度。Evaluator 与三个 MLLM 参数独立，并使用人工子集校准。</p>
+
+          <p><strong>效果分布建模。</strong> Tool-Effect MLLM 以失败状态和完整动作序列为条件，预测每条约束变化的分布、实际影响范围及成本：</p>
+          <div class="equation">
+            q_\phi(\Delta\mathbf c,\Omega,C\mid x,do(\mathbf a))。
+            <span class="eqno">(E4)</span>
+          </div>
+          <p>模型显式编码工具顺序，因此可以区分 G1→G4 和 G4→G1；使用工具对交互 token 表示“两个工具单独安全、组合后失败”的情况。多种子监督使模型预测稳定性而非一次偶然结果。本文将“干预式”限定为采集动作由实验协议随机分配，不把观察日志中的相关性包装为因果结论。</p>
+
+          <h3 id="enhanced-repair">3.3 Repair MLLM：干预知识蒸馏与在线直接修复</h3>
+          <p>离线干预结果按照目标增益、连带损伤、稳定性和成本形成动作偏好：</p>
+          <div class="equation">
+            U(\mathbf a)=
+            G_{\mathrm{target}}(\mathbf a)
+            -\lambda R_{\mathrm{collateral}}(\mathbf a)
+            -\mu C(\mathbf a)
+            -\nu\,\mathrm{Var}_z[\Delta\mathbf c_{\mathbf a,z}]。
+            <span class="eqno">(E5)</span>
+          </div>
+          <p>Repair MLLM 先在最优或 Pareto 修复程序上进行 SFT，再以同状态干预分支构造 DPO 排序对。其输出不是自然语言建议，而是一个通过 schema 验证的程序：</p>
+          <pre>{
+  "generator": "G4",
+  "target": "P03",
+  "interval": [746.2, 747.1],
+  "region": "face_track_31",
+  "instruction": "restore cross-shot identity",
+  "locked": ["dialogue", "voice", "background"],
+  "seed_policy": "most_stable"
+}</pre>
+          <p>在线时，Tool-Effect MLLM 在特征空间预测候选结果，不生成对照视频；Repair MLLM 一次输出选定程序，默认只调用一个生成编辑器。只有任务存在必要依赖时，程序才包含训练中见过的短工具链。生成完成后，独立 verifier 检查目标与保护约束；通过则提交，失败则将新诊断交回下一轮，但模型参数不会在用户任务中即时更新。</p>
+
+          <p><strong>周期性自进化。</strong> 在线执行的接受与拒绝样本进入版本化经验池。系统定期挑选预测误差大或决策不确定的状态补做离线干预，重新训练并经固定测试集验证后发布新版本。因此“自进化”指受控的周期更新，不是边处理用户视频边修改自身参数。</p>
+        </section>
+
+        <section id="enhanced-experiments">
+          <h2>4. 实验</h2>
+
+          <h3>4.1 数据、任务与公平设置</h3>
+          <p>基础 PersonaRepair-Bench 增加 Intervene Split：每个失败状态包含 no-op、单工具、工具删除、参数改变、顺序交换和关键工具对，并为核心动作配置多个随机种子。训练、验证与测试按视频、人物和生成器版本划分。所有在线方法共享生成器、最大修复轮数和真实生成预算；PersonaRepair-X 的离线干预成本单独报告，不能隐藏在训练成本中。</p>
+
+          <h3>4.2 干预效果预测</h3>
+          <table>
+            <thead>
+              <tr><th>训练数据/模型</th><th>目标增益 MAE ↓</th><th>风险 AUROC ↑</th><th>稳定性误差 ↓</th><th>排序 NDCG ↑</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>历史调用日志</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+              <tr><td>随机参数增强</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+              <tr><td>干预数据，单工具</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+              <tr><td><strong>完整 Interventional MLLM</strong></td><td><strong>待测</strong></td><td><strong>待测</strong></td><td><strong>待测</strong></td><td><strong>待测</strong></td></tr>
+            </tbody>
+          </table>
+          <p>核心对照是“观察日志 vs 随机分配”“单动作边际 vs 顺序交互”“单种子 vs 多种子分布”。另外在未见人物、视频类型和生成器版本上测试分布外校准，防止模型记忆五个工具的固定排名。</p>
+
+          <h3>4.3 在线修复性能</h3>
+          <table>
+            <thead>
+              <tr><th>方法</th><th>联合修复保持率 ↑</th><th>在线生成次数 ↓</th><th>非目标破坏 ↓</th><th>跨种子成功率 ↑</th><th>成本 ↓</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>AVE-Agent-style reflection</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+              <tr><td>Online trial-and-error</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+              <tr><td>Repair MLLM w/o intervention</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+              <tr><td><strong>PersonaRepair-X</strong></td><td><strong>待测</strong></td><td><strong>待测</strong></td><td><strong>待测</strong></td><td><strong>待测</strong></td><td><strong>待测</strong></td></tr>
+              <tr><td>Oracle branch</td><td>待测</td><td>1.0</td><td>待测</td><td>待测</td><td>待测</td></tr>
+            </tbody>
+          </table>
+          <p>“联合修复保持率”要求目标由独立评价判定通过且全部固定保护约束通过；no-op、放弃和只提高内部 verifier 分数均计失败。修改范围只在真正修复成功的案例上统计，防止通过少改或拒绝修复提高保持分数。</p>
+
+          <h3>4.4 五编辑器消融、顺序分析与成本</h3>
+          <p>依次加入 G4 跨镜头一致性和 G5 边界协调，验证提升是否来自长视频专用能力，而非单纯工具数量。顺序实验比较 G1→G4、G4→G1、G3→G5 等组合；干预效率实验比较均匀随机、只采样作用域重叠动作和决策敏感主动采样。报告离线生成总时长、GPU 小时、每个状态平均分支数，以及在线减少的实际生成调用。</p>
+
+          <div class="warning">
+            <strong>增强版成立的最低证据：</strong>干预数据必须显著优于同规模观察日志；序列模型必须优于单动作效果模型；在线只能执行一个候选时，仍需比 AVE-Agent 式反复重试减少生成次数和非目标破坏。否则随机干预只是昂贵的数据增强。
+          </div>
+        </section>
+
+        <section id="enhanced-conclusion">
+          <h2>5. 局限性与结论</h2>
+          <p><strong>局限性。</strong> 离线干预会显著增加生成成本，合法动作空间仍不能覆盖全部工具组合；随机分配只能识别采样支持范围内的效果，不能保证任意新工具上的因果泛化。独立评价器仍可能遗漏人类可感知问题。三个 MLLM 的级联错误也可能导致错误诊断被后续决策放大。</p>
+          <p><strong>结论。</strong> PersonaRepair-X 将生成工具的随机性从在线试错负担转化为离线可学习经验。通过受控多种子干预、序列化 Tool-Effect MLLM 和修复策略蒸馏，系统在线无需渲染多个候选即可选择一个低破坏修复程序。新增的跨镜头一致性与边界协调编辑器进一步针对长视频中的身份漂移和局部补丁接缝。</p>
+        </section>
+
+        <section id="enhanced-references">
+          <h2>参考文献</h2>
+          <ol class="refs">
+            <li>Y. Wen et al. <a href="https://arxiv.org/abs/2607.24821">AVE-Compass: Towards Holistic Evaluation for Audio-Video Editing Abilities</a>. arXiv, 2026.</li>
+            <li>Y. Lin et al. <a href="https://openaccess.thecvf.com/content/CVPR2026/html/Lin_JarvisEvo_Towards_a_Self-Evolving_Photo_Editing_Agent_with_Synergistic_Editor-Evaluator_CVPR_2026_paper.html">JarvisEvo: Towards a Self-Evolving Photo Editing Agent</a>. CVPR, 2026.</li>
+            <li>W. Wu et al. <a href="https://arxiv.org/abs/2608.26809">Thinking on Shots: Consistent Multi-Shot Video Editing with Agentic Reasoning</a>. arXiv, 2026.</li>
+            <li>H. Zheng et al. <a href="https://arxiv.org/abs/2605.18467">InstructAV2AV: Instruction-Guided Audio-Video Joint Editing</a>. SIGGRAPH Asia, 2026.</li>
+            <li>H. Zheng et al. <a href="https://openaccess.thecvf.com/content/CVPR2026/html/Zheng_Audio-sync_Video_Instance_Editing_with_Granularity-Aware_Mask_Refiner_CVPR_2026_paper.html">Audio-sync Video Instance Editing with Granularity-Aware Mask Refiner</a>. CVPR, 2026.</li>
+            <li>Y. Zheng et al. <a href="https://arxiv.org/abs/2606.07636">Crayotter: Traceable Multi-Agent Workflows for Long-Form Video Editing</a>. arXiv, 2026.</li>
+            <li>H. Randall et al. <a href="https://arxiv.org/abs/2608.25622">RefineCut: Verifier-Guided Iterative Refinement for Timeline Editing</a>. EMNLP, 2026.</li>
+            <li>A. Sharan et al. <a href="https://arxiv.org/abs/2504.17180">We'll Fix It in Post: Neuro-Symbolic Video Generation and Repair</a>. arXiv, 2025.</li>
+          </ol>
+        </section>
+
+        <footer class="footer">
+          PersonaRepair-X 增强版 · 离线随机干预，在线直接修复 · 实验结果尚未产生
+        </footer>
+      </div>
+
+      <script>
+        (() => {
+          const tabs = {
+            original: {
+              button: document.getElementById('tab-original'),
+              panel: document.getElementById('paper-original'),
+              toc: document.getElementById('toc-original')
+            },
+            enhanced: {
+              button: document.getElementById('tab-enhanced'),
+              panel: document.getElementById('paper-enhanced'),
+              toc: document.getElementById('toc-enhanced')
+            }
+          };
+
+          function selectVersion(version, updateHash = true) {
+            const selected = tabs[version] ? version : 'original';
+            Object.entries(tabs).forEach(([key, item]) => {
+              const active = key === selected;
+              item.button.setAttribute('aria-selected', String(active));
+              item.panel.hidden = !active;
+              item.toc.hidden = !active;
+            });
+            if (updateHash) {
+              history.replaceState(null, '', selected === 'enhanced' ? '#enhanced' : '#original');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }
+
+          tabs.original.button.addEventListener('click', () => selectVersion('original'));
+          tabs.enhanced.button.addEventListener('click', () => selectVersion('enhanced'));
+          selectVersion(location.hash.startsWith('#enhanced') ? 'enhanced' : 'original', false);
+        })();
+      </script>
     </main>
   </div>
 </body>
