@@ -226,6 +226,387 @@
       border-bottom: .35mm solid #334155;
       font-size: 12pt;
     }
+    .reader-topbar { display: none; }
+
+    @media screen {
+      :root {
+        --ink: #2f2a24;
+        --muted: #6f675e;
+        --line: #ded8cf;
+        --blue: #a64f32;
+        --light-blue: #f4eee5;
+        --orange: #b65f3d;
+        --light-orange: #fbf1e8;
+        --green: #57705a;
+        --light-green: #edf2e9;
+        --red: #b2473e;
+      }
+      html {
+        scroll-behavior: smooth;
+        background: #f3f0e8;
+      }
+      body {
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 80% 0%, rgba(191, 123, 87, .07), transparent 30rem),
+          #f3f0e8;
+        font-family: "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", Georgia, serif;
+        font-size: 17px;
+        line-height: 1.78;
+        letter-spacing: .005em;
+      }
+      .reader-topbar {
+        position: sticky;
+        z-index: 20;
+        top: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 58px;
+        padding: 0 max(22px, calc((100vw - 900px) / 2));
+        border-bottom: 1px solid rgba(71, 61, 51, .1);
+        background: rgba(247, 244, 237, .88);
+        box-shadow: 0 1px 12px rgba(70, 55, 40, .025);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        font-family: Arial, "Noto Sans CJK SC", sans-serif;
+      }
+      .reader-brand {
+        color: #3a342e;
+        font-family: Georgia, "Noto Serif CJK SC", serif;
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: -.01em;
+      }
+      .reader-meta {
+        color: #83796f;
+        font-size: 12px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .reader-topbar a {
+        padding: 7px 12px;
+        border: 1px solid #d8cfc4;
+        border-radius: 999px;
+        color: #725647;
+        font-size: 12px;
+        transition: background .2s ease, border-color .2s ease;
+      }
+      .reader-topbar a:hover {
+        border-color: #c9b5a6;
+        background: #eee7dd;
+      }
+      .paper-page {
+        width: min(100%, 900px);
+        height: auto;
+        min-height: 0;
+        margin: 0 auto;
+        padding: 78px 54px 36px;
+        overflow: visible;
+        background: transparent;
+        box-shadow: none;
+      }
+      .paper-page + .paper-page {
+        padding-top: 26px;
+      }
+      .paper-page::after { display: none; }
+      .columns,
+      .paper-page .columns[style] {
+        column-count: 1;
+        height: auto !important;
+      }
+      h1 {
+        max-width: 760px;
+        margin: 0 auto 16px;
+        color: #2e2923;
+        font-family: Georgia, "Noto Serif CJK SC", "Source Han Serif SC", serif;
+        font-size: clamp(34px, 5vw, 54px);
+        font-weight: 500;
+        line-height: 1.14;
+        letter-spacing: -.035em;
+        text-align: left;
+      }
+      .subtitle {
+        max-width: 760px;
+        margin: 0 auto 18px;
+        color: #806454;
+        font: 500 clamp(15px, 2vw, 19px)/1.5 Arial, "Noto Sans CJK SC", sans-serif;
+        text-align: left;
+      }
+      .authors {
+        max-width: 760px;
+        margin: 0 auto 20px;
+        color: #857b71;
+        font-size: 13px;
+        text-align: left;
+      }
+      .draft {
+        max-width: 760px;
+        margin: 0 auto 42px;
+        padding: 12px 15px;
+        border: 0;
+        border-left: 3px solid #c97b55;
+        border-radius: 0 9px 9px 0;
+        background: #f5eadf;
+        color: #714a37;
+        font-size: 13px;
+        font-weight: 500;
+        text-align: left;
+      }
+      .abstract {
+        width: auto;
+        max-width: 760px;
+        margin: 0 auto 42px;
+        padding: 28px 30px;
+        border: 1px solid #dfd7ce;
+        border-radius: 18px;
+        background: rgba(250, 248, 243, .72);
+        font-size: 16px;
+      }
+      .abstract h2 {
+        margin-top: 0;
+        text-align: left;
+      }
+      h2 {
+        margin: 48px 0 16px;
+        color: #342f29;
+        font-family: Georgia, "Noto Serif CJK SC", serif;
+        font-size: 29px;
+        font-weight: 500;
+        line-height: 1.25;
+        letter-spacing: -.025em;
+      }
+      h3 {
+        margin: 34px 0 10px;
+        color: #3d3730;
+        font-size: 19px;
+        font-weight: 650;
+        line-height: 1.4;
+        letter-spacing: -.01em;
+      }
+      h4 { font-size: 16px; }
+      p {
+        margin: 0 0 16px;
+        color: #443e37;
+        text-align: left;
+      }
+      .lead::first-letter {
+        margin: 10px 10px 0 0;
+        color: #b05b3a;
+        font-size: 58px;
+        font-weight: 500;
+      }
+      .page-title {
+        margin: 0 0 44px;
+        padding: 0 0 13px;
+        border-bottom: 1px solid #d9d1c8;
+        color: #9a6a52;
+        font-family: Arial, "Noto Sans CJK SC", sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+      }
+      figure,
+      figure.full {
+        margin: 34px 0 42px;
+      }
+      figure img {
+        max-height: none;
+        border: 1px solid #ded6cc;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 18px 42px rgba(70, 52, 37, .08);
+      }
+      figcaption {
+        max-width: 720px;
+        margin: 13px auto 0;
+        color: #70675e;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      .callout {
+        margin: 28px 0;
+        padding: 20px 22px;
+        border: 0;
+        border-radius: 13px;
+        background: #ebe6dc;
+        color: #473f37;
+        font-size: 15px;
+        line-height: 1.65;
+      }
+      .callout.orange { background: #f3e5d9; }
+      .callout.green { background: #e7ece4; }
+      ul, ol {
+        margin: 10px 0 22px 4px;
+        padding-left: 25px;
+      }
+      li { margin-bottom: 8px; }
+      li::marker { color: #a75c3d; }
+      .equation {
+        margin: 24px 0;
+        padding: 18px 46px 18px 20px;
+        overflow-x: auto;
+        border: 1px solid #e0d9d0;
+        border-radius: 12px;
+        background: rgba(250, 248, 243, .68);
+        color: #312d28;
+        font-size: 16px;
+        line-height: 1.6;
+        white-space: nowrap;
+      }
+      .eqno { color: #9a9187; }
+      table {
+        display: table;
+        width: 100%;
+        margin: 26px 0 32px;
+        overflow: hidden;
+        border: 1px solid #ddd5cb;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 12px;
+        background: rgba(251, 249, 245, .7);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      th, td {
+        padding: 12px 13px;
+        border: 0;
+        border-right: 1px solid #e3dcd3;
+        border-bottom: 1px solid #e3dcd3;
+      }
+      th:last-child, td:last-child { border-right: 0; }
+      tbody tr:last-child td { border-bottom: 0; }
+      th {
+        background: #ebe6de;
+        color: #4b433b;
+      }
+      .algorithm {
+        margin: 28px 0;
+        padding: 22px 24px;
+        border: 1px solid #d9d1c7;
+        border-radius: 14px;
+        background: #f8f5ef;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .algorithm .title {
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #ddd4ca;
+        color: #5b463a;
+      }
+      .algorithm > code {
+        display: block;
+        overflow-x: auto;
+        color: #544b43;
+        white-space: pre-wrap;
+      }
+      code {
+        padding: 2px 5px;
+        border-radius: 5px;
+        background: #eae5dc;
+        color: #714f3d;
+      }
+      .status {
+        padding: 3px 8px;
+        background: #f3ddd5;
+        color: #8d4034;
+        font-size: 10px;
+      }
+      a {
+        color: #9e4f34;
+        text-decoration: underline;
+        text-decoration-color: rgba(158, 79, 52, .25);
+        text-underline-offset: 3px;
+      }
+      .refs {
+        column-count: 1;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .refs p {
+        margin-bottom: 11px;
+        padding-left: 24px;
+        text-indent: -24px;
+      }
+    }
+
+    @media screen and (max-width: 700px) {
+      body {
+        font-size: 16px;
+        line-height: 1.72;
+      }
+      .reader-topbar {
+        min-height: 52px;
+        padding: 0 17px;
+      }
+      .reader-meta { display: none; }
+      .reader-topbar a {
+        padding: 5px 9px;
+        font-size: 11px;
+      }
+      .paper-page,
+      .paper-page + .paper-page {
+        padding: 52px 20px 18px;
+      }
+      .paper-page + .paper-page { padding-top: 24px; }
+      h1 {
+        font-size: 34px;
+        line-height: 1.17;
+      }
+      .subtitle { font-size: 15px; }
+      .draft { margin-bottom: 30px; }
+      .abstract {
+        margin-bottom: 28px;
+        padding: 21px 19px;
+        border-radius: 13px;
+        font-size: 15px;
+      }
+      h2 {
+        margin-top: 38px;
+        font-size: 25px;
+      }
+      h3 {
+        margin-top: 28px;
+        font-size: 18px;
+      }
+      .page-title { margin-bottom: 26px; }
+      figure, figure.full { margin: 27px 0 31px; }
+      figure img {
+        width: calc(100vw - 24px);
+        max-width: none;
+        margin-left: -8px;
+        border-radius: 10px;
+      }
+      figcaption {
+        padding: 0 2px;
+        font-size: 12px;
+      }
+      .callout {
+        margin: 22px 0;
+        padding: 17px;
+      }
+      .equation {
+        margin: 20px -4px;
+        padding: 15px 38px 15px 15px;
+        font-size: 14px;
+      }
+      table {
+        display: block;
+        width: calc(100vw - 24px);
+        margin-left: -8px;
+        overflow-x: auto;
+        border-radius: 9px;
+        white-space: nowrap;
+      }
+      th, td { min-width: 105px; }
+      .algorithm {
+        margin: 22px -4px;
+        padding: 18px;
+      }
+    }
+
     @page { size: 216mm 279mm; margin: 0; }
     @media print {
       html, body {
@@ -251,6 +632,12 @@
   </style>
 </head>
 <body>
+
+<header class="reader-topbar">
+  <div class="reader-brand">PersonaRepair</div>
+  <div class="reader-meta">CVPR · 中文研究草稿</div>
+  <a href="#references">参考文献</a>
+</header>
 
 <!-- PAGE 1 -->
 <section class="paper-page">
@@ -712,7 +1099,7 @@
 </section>
 
 <!-- PAGE 8 -->
-<section class="paper-page">
+<section class="paper-page" id="references">
   <h2 class="page-title">PersonaRepair · 局限、结论与参考文献</h2>
   <div class="columns" style="height: 90mm;">
     <h2>8. 局限与社会影响</h2>
