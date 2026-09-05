@@ -226,14 +226,26 @@
       border-bottom: .35mm solid #334155;
       font-size: 12pt;
     }
+    @page { size: 216mm 279mm; margin: 0; }
     @media print {
-      html, body { background: white; }
+      html, body {
+        width: 216mm;
+        margin: 0;
+        padding: 0;
+        background: white;
+      }
       .paper-page {
+        width: 216mm;
+        height: 278mm;
         margin: 0;
         box-shadow: none;
-        page-break-after: always;
+        break-after: auto;
+        page-break-after: auto;
       }
-      .paper-page:last-child { page-break-after: auto; }
+      .paper-page + .paper-page {
+        break-before: page;
+        page-break-before: always;
+      }
       a { color: inherit; }
     }
   </style>
@@ -584,7 +596,7 @@
       <li><b>状态 Adapter SFT。</b> 从视频索引和指令输出实体引用及约束原子；采用节点、关系、时间边界和保护范围的联合监督。</li>
       <li><b>诊断 Adapter SFT。</b> 在真实与注入故障上训练式 (7)，随后以困难负例和 pairwise preference 校准解释与证据一致性。</li>
       <li><b>效果模型训练。</b> 使用工具调用前后约束变化监督 \(g_{ji},r_{ji},\Omega_j,C_j\)。按视频、人物和编辑器版本划分数据，避免执行记忆泄漏。</li>
-      <li><b>可选策略微调。</b> 在完整系统稳定后，以约束满足、NRR、修改范围和成本组成可验证奖励，对候选生成策略进行 GRPO；主实验必须保留无 RL 版本，证明核心收益来自诊断与优化。</li>
+      <li><b>可选策略扩展。</b> 若实验证明多轮工具顺序显著影响后续可修复性，可在补充材料中使用离线策略学习；主论文默认不加入 RL，以隔离诊断和约束优化本身的贡献。</li>
     </ol>
 
     <div class="callout green">
