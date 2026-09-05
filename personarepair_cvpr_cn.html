@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PersonaRepair：长视频人物中心音画诊断与保真定点修复</title>
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #4b5563;
+      --line: #cbd5e1;
+      --blue: #155e75;
+      --light-blue: #ecfeff;
+      --orange: #9a3412;
+      --light-orange: #fff7ed;
+      --green: #166534;
+      --light-green: #f0fdf4;
+      --red: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    html { background: #d8dde5; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", serif;
+      font-size: 9.15pt;
+      line-height: 1.25;
+      counter-reset: page;
+    }
+    .paper-page {
+      position: relative;
+      width: 216mm;
+      height: 279mm;
+      margin: 8mm auto;
+      padding: 13mm 14mm 12mm;
+      overflow: hidden;
+      background: white;
+      box-shadow: 0 2px 12px rgba(15, 23, 42, .18);
+      counter-increment: page;
+    }
+    .paper-page::after {
+      content: counter(page);
+      position: absolute;
+      bottom: 5mm;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      font-size: 8pt;
+    }
+    .columns {
+      column-count: 2;
+      column-gap: 6mm;
+      column-fill: auto;
+      height: 100%;
+    }
+    h1, h2, h3, h4, .sans, table, .equation, .callout, .algorithm, .meta {
+      font-family: Arial, "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+    }
+    h1 {
+      margin: 0 0 2mm;
+      font-size: 21pt;
+      line-height: 1.12;
+      text-align: center;
+      letter-spacing: -.25px;
+    }
+    .subtitle {
+      margin-bottom: 3mm;
+      color: var(--blue);
+      font: 700 12pt/1.2 Arial, "Noto Sans CJK SC", sans-serif;
+      text-align: center;
+    }
+    .authors {
+      margin-bottom: 2mm;
+      font: 9.5pt/1.3 Arial, "Noto Sans CJK SC", sans-serif;
+      text-align: center;
+    }
+    .draft {
+      margin: 0 auto 3mm;
+      padding: 1.5mm 2.5mm;
+      max-width: 160mm;
+      border: 1px solid #f59e0b;
+      background: #fffbeb;
+      color: #92400e;
+      font: 700 8.5pt/1.25 Arial, "Noto Sans CJK SC", sans-serif;
+      text-align: center;
+    }
+    h2 {
+      margin: 2.5mm 0 1mm;
+      font-size: 12pt;
+      line-height: 1.15;
+    }
+    h3 {
+      margin: 2mm 0 .7mm;
+      font-size: 10pt;
+      line-height: 1.15;
+    }
+    h4 {
+      display: inline;
+      margin: 0;
+      font-size: 9.15pt;
+    }
+    p {
+      margin: 0 0 1.35mm;
+      text-align: justify;
+      hyphens: auto;
+    }
+    .abstract {
+      width: 176mm;
+      margin: 0 auto 3mm;
+      font-size: 9pt;
+    }
+    .abstract h2 { text-align: center; }
+    .lead::first-letter {
+      float: left;
+      margin: .2mm .7mm 0 0;
+      font: 700 25pt/.82 Georgia, serif;
+      color: var(--blue);
+    }
+    figure {
+      break-inside: avoid;
+      margin: 2mm 0 2.2mm;
+    }
+    figure.full {
+      column-span: all;
+      margin: 1.5mm 0 2.5mm;
+    }
+    figure img {
+      display: block;
+      width: 100%;
+      max-height: 69mm;
+      object-fit: contain;
+      border: .25mm solid #dbe3ec;
+      background: #fff;
+    }
+    figcaption {
+      margin-top: 1mm;
+      font-size: 8pt;
+      line-height: 1.2;
+      text-align: justify;
+    }
+    .callout {
+      break-inside: avoid;
+      margin: 2mm 0;
+      padding: 2mm;
+      border-left: 1.2mm solid var(--blue);
+      background: var(--light-blue);
+      font-size: 8.7pt;
+    }
+    .callout.orange { border-left-color: var(--orange); background: var(--light-orange); }
+    .callout.green { border-left-color: var(--green); background: var(--light-green); }
+    ul, ol { margin: .8mm 0 1.5mm 4mm; padding-left: 3mm; }
+    li { margin-bottom: .6mm; text-align: justify; }
+    .equation {
+      break-inside: avoid;
+      margin: 1.4mm 0;
+      padding: 1.1mm;
+      font-family: "Times New Roman", serif;
+      font-size: 9.4pt;
+      text-align: center;
+    }
+    .eqno { float: right; font-family: Arial, sans-serif; }
+    table {
+      width: 100%;
+      margin: 1.4mm 0 2mm;
+      border-collapse: collapse;
+      font-size: 7.7pt;
+      line-height: 1.18;
+      break-inside: avoid;
+    }
+    th, td {
+      padding: 1mm 1.1mm;
+      border: .2mm solid #9ca3af;
+      vertical-align: top;
+      text-align: left;
+    }
+    th { background: #eef2f7; font-weight: 700; }
+    .wide { column-span: all; }
+    .algorithm {
+      break-inside: avoid;
+      margin: 1.7mm 0;
+      padding: 1.5mm 2mm;
+      border-top: .45mm solid #111;
+      border-bottom: .45mm solid #111;
+      font-size: 8pt;
+      line-height: 1.25;
+    }
+    .algorithm .title {
+      margin-bottom: 1mm;
+      padding-bottom: .8mm;
+      border-bottom: .2mm solid #777;
+      font-weight: 700;
+    }
+    .algorithm ol { margin-bottom: 0; }
+    code {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: .92em;
+    }
+    .small { font-size: 8pt; line-height: 1.2; }
+    .tiny { font-size: 7.2pt; line-height: 1.17; }
+    .refs {
+      column-count: 2;
+      column-gap: 5mm;
+      font-size: 6.8pt;
+      line-height: 1.14;
+    }
+    .refs p {
+      margin-bottom: .85mm;
+      padding-left: 3.7mm;
+      text-indent: -3.7mm;
+      text-align: left;
+    }
+    .status {
+      display: inline-block;
+      padding: .2mm .8mm;
+      border-radius: 2mm;
+      background: #fee2e2;
+      color: #991b1b;
+      font: 700 6.8pt Arial, sans-serif;
+      vertical-align: .3mm;
+    }
+    a { color: #075985; text-decoration: none; }
+    .page-title {
+      margin: -2mm 0 2mm;
+      padding-bottom: 1mm;
+      border-bottom: .35mm solid #334155;
+      font-size: 12pt;
+    }
+    @media print {
+      html, body { background: white; }
+      .paper-page {
+        margin: 0;
+        box-shadow: none;
+        page-break-after: always;
+      }
+      .paper-page:last-child { page-break-after: auto; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- PAGE 1 -->
+<section class="paper-page">
+  <h1>PersonaRepair：长视频人物中心音画诊断<br/>与保真定点修复</h1>
+  <div class="subtitle">Character-Centric Audiovisual Diagnosis and Fidelity-Preserving Targeted Repair for Long-Form Video Editing</div>
+  <div class="authors">匿名 CVPR 投稿 · Paper ID ####</div>
+  <div class="draft">中文研究草稿 v0.1：实验数字尚未产生，所有“待测”项必须以真实结果替换后方可投稿。</div>
+
+  <div class="abstract">
+    <h2>摘要</h2>
+    <p>自然语言驱动的音视频编辑 Agent 已能将复杂指令拆解为视觉、语音和音频子任务，并通过多种生成工具完成编辑。然而，当任务扩展到长视频中的人物替换、台词修改、画外音重制和纯视觉修改时，现有系统通常只能给出整体质量评价或重新运行完整分支，难以回答三个关键问题：<em>哪个人物的哪一段音画关系失败、哪次工具调用造成失败、以及如何在不破坏正确内容的前提下修复</em>。本文提出 PersonaRepair，一种面向长视频多说话人编辑的诊断—修复框架。系统首先构建人物中心的音画状态，用带时间证据的约束原子描述人物、人脸轨迹、声纹、台词、可见性和嘴部运动之间的关系。随后，细粒度音画诊断器在最终渲染结果上预测违反的约束、失败区间及责任操作。为避免“修好一处、破坏多处”，我们进一步学习工具效果模型，估计候选操作对失败约束和已通过约束的修复概率与副作用，并将定点修复表述为带依赖、预算和无回退约束的整数优化问题。最后，我们设计修复后邻域复验机制以及一个覆盖画内/画外切换、跨镜头重现、多人交替和非目标内容保持的评测协议。PersonaRepair 不追求替代通用音视频编辑器，而是为其增加可诊断、可归因、低修改范围的可靠修复层。</p>
+  </div>
+
+  <figure class="full">
+    <img src="/opt/cursor/artifacts/assets/fig1_problem_overview.png" alt="长视频人物中心音画编辑、诊断与定点修复问题示意图" />
+    <figcaption><b>图 1.</b> 问题概览。相同人物在长视频中经历画内说话、画外发声和纯视觉修改等状态。通用 Agent 可以完成任务分解，但一次局部错误往往触发大范围重生成。PersonaRepair 将错误定位到“人物—台词—声纹—嘴部—时间”的具体关系，并仅重做必要的时间、空间与模态范围，同时保护其余内容。</figcaption>
+  </figure>
+
+  <div class="columns" style="height: 93mm;">
+    <h2>1. 引言</h2>
+    <p class="lead">长视频后期制作不是若干独立模型的简单串联。以“将角色 A 替换为角色 B，并把 12:24 处台词改为‘周末见’，但保留环境声；18:03 的画外音只调整语气”为例，系统必须联合判断角色在哪些镜头出现、何时发声、嘴部是否可见，以及哪些画面和声音必须保持。人物编辑器、台词编辑器和视觉编辑器即使分别表现良好，组合后仍会产生身份漂移、说话者错配、局部唇音不同步、画外音误改画面和环境声污染。</p>
+    <p>近期音视频联合编辑模型已支持人物外观、音色和台词的组合控制 [3,4]；AVE-Agent [1] 将复杂指令分解为有依赖关系的子任务，并利用评价反馈改进局部结果；AVA-Encoder [2] 进一步将电影表示为可操作的知识图并支持关联子图编辑。这些进展说明，“使用 VLM 规划并调用多个工具”“构建语义图”“编辑失败后反思”本身已不足以构成新的方法贡献。</p>
+    <p>本文关注被现有系统弱化的问题：<b>对最终成片进行人物中心的细粒度诊断，并在已知工具副作用的情况下求解最小无回退修复。</b>与返回单一分数的评价器不同，我们的诊断结果具有对象、关系、时间证据和操作归因。例如，它可以指出“角色 A 在 12:26.2–12:27.1 的嘴部轨迹比新台词滞后 240 ms；声纹与背景均正确；责任操作为 lip-edit-05”。这使系统可以只重做 0.9 秒嘴部，而非重新生成整段人物与音轨。</p>
+  </div>
+</section>
+
+<!-- PAGE 2 -->
+<section class="paper-page">
+  <h2 class="page-title">PersonaRepair · 相关工作与问题定义</h2>
+  <div class="columns">
+    <p>我们的贡献概括如下：</p>
+    <ol>
+      <li><b>成片证据驱动的细粒度音画诊断。</b> 将人物身份、声纹、台词归属、可见性、主动说话和唇音同步表示为带时间支持区间的约束原子；诊断器输出失败关系、证据区间和上游责任操作，而非整体质量分数。</li>
+      <li><b>工具副作用感知的定点修复。</b> 学习候选工具对失败约束和正确约束的概率性影响，并在依赖、成本、范围和无回退约束下优化最小重执行计划。</li>
+      <li><b>面向长视频多说话人编辑的诊断—修复评测。</b> 覆盖画内/画外切换、遮挡、多人交替、跨镜头重现及可控故障注入，同时报告定位、修复、修改范围和 No-Regression 指标。</li>
+    </ol>
+
+    <h2>2. 相关工作</h2>
+    <h3>2.1 指令驱动音视频编辑</h3>
+    <p>视觉视频编辑从掩码、结构条件和扩散先验逐步发展到指令统一建模。VACE [5] 通过 Video Condition Unit 支持视频生成、视频到视频及掩码编辑；VEGGIE [6] 将 MLLM grounding 与扩散编辑联合训练；CoT-Edit [7] 用 MLLM 预测逐时序边界框和属性指令；VideoCoF [8] 先预测编辑区域 latent，再生成目标视频，并通过 RoPE 对齐支持长度外推。VIVA [9] 则以视觉落地的指令表示和 Edit-GRPO 优化指令遵循与内容保持。</p>
+    <p>音画联合方面，AvED [10] 通过跨模态增量去噪进行零样本音视频编辑；AVI-Edit [4] 结合实例掩码细化与音频 Agent，实现目标实例及其声音的同步编辑；InstructAV2AV [3] 进一步在统一模型中组合控制人物外观、音色和台词，并保持非目标背景及环境声。上述方法主要解决“如何生成正确结果”，而本文研究“生成后如何在长视频中定位跨模态失败并以最小代价修复”。</p>
+
+    <h3>2.2 视频编辑 Agent</h3>
+    <p>EditDuet [11] 使用 Editor–Critic 迭代构建 A-roll/B-roll 时间线。UniVA [12] 采用 Plan-and-Act 架构、模块化工具和分层记忆，覆盖理解、分割、生成与编辑。VideoAgent [13] 集成三十余个专用 Agent，并用 textual-gradient 优化工具工作流 DAG。Crayotter [14] 将蓝图、工具调用和中间渲染外显为可追踪产物，支持选择性重执行。AVE-Agent [1] 与本文最相关：它构造任务拓扑图，将子任务分派给视觉、音频或语音分支，并根据局部与全局评价反馈进行重混、重生成或重规划。</p>
+    <p>PersonaRepair 与它们的边界是：工作流图的节点表示“执行什么工具”，而我们的约束表示最终成片中“哪个人物在何时应与哪段声纹、台词和嘴部运动保持何种关系”；前者主要保证任务覆盖，后者支持媒体证据定位、责任归因和无回退修复。</p>
+
+    <h3>2.3 长视频人物与说话者建模</h3>
+    <p>长视频理解依赖压缩记忆、检索和跨模态身份关联。MA-LMM [15] 维护视觉与查询记忆；LVAgent [16] 通过动态多 Agent 协作完成长视频理解；CineSRD [17] 使用视觉锚点聚类注册人物，结合声纹、字幕和说话者轮次检测补充画外说话人。LoCoNet [18]、SPELL [19] 和 TalkNet [20] 提供主动说话人检测能力。它们为本文的状态观测提供可靠前端，但不处理编辑后的约束验证与修复。</p>
+
+    <h3>2.4 图表示、验证和局部修复</h3>
+    <p>AVA-Encoder [2] 将电影编码为 Story–Event–Shot 层级与 Character、Audio 等状态节点，通过有类型的边支持跨镜头一致性和关联子图编辑。因此，本文不将“电影知识图”或“受影响子图传播”作为贡献，而将其视为状态容器。NeuS-V [21] 用时序逻辑与模型检查评价文本到视频；NeuS-E [22] 可定位弱满足命题并重生成相关片段；VideoRepair [23] 借助 MLLM 找到文本—视频不一致并保留正确区域。RefineCut [24] 在结构化时间线上维护显式 constraint ledger，并选择满足局部性和 no-regression 的补丁。本文将类似的可靠性思想推进到多说话人最终成片的身份、声纹、台词和唇音关系。</p>
+
+    <div class="callout orange">
+      <b>新颖性边界。</b> 我们不声称首次提出音视频编辑 Agent、任务图、人物—音频关系图、局部重执行或反思。核心问题是：在真实渲染结果上，将跨模态失败定位到具体人物关系和时间证据，并根据学习到的生成工具副作用求解最小无回退修复。
+    </div>
+
+    <h2>3. 问题定义</h2>
+    <p>给定带音频的长视频 \(X=(V,A)\)、自然语言编辑指令 \(q\) 和编辑器集合 \(\mathcal{T}=\{T_k\}_{k=1}^{K}\)，通用编辑 Agent 产生工具轨迹 \(\tau=(a_1,\ldots,a_n)\) 及编辑结果 \(\hat X\)。本文不改变工具内部结构，而是在 \(\hat X\) 上诊断约束违反，并输出修复轨迹 \(\rho\)，得到 \(X^\star\)。</p>
+
+    <p>我们将一个可验证约束写为：</p>
+    <div class="equation">
+      \(c_i=(s_i,r_i,o_i,I_i,\mathcal{M}_i,y_i)\)，
+      <span class="eqno">(1)</span>
+    </div>
+    <p>其中 \(s_i,o_i\) 是人物、声纹、台词、轨迹或媒体区域，\(r_i\) 是关系，\(I_i=[t_i^s,t_i^e]\) 是支持区间，\(\mathcal M_i\subseteq\{\text{video},\text{speech},\text{audio}\}\) 是相关模态，\(y_i\in\{0,1\}\) 表示预期关系。例如：</p>
+
+    <table>
+      <thead><tr><th>约束</th><th>含义</th><th>可验证证据</th></tr></thead>
+      <tbody>
+        <tr><td><code>SpokenBy(u,p)</code></td><td>台词 \(u\) 属于人物 \(p\)</td><td>ASR、diarization、声纹</td></tr>
+        <tr><td><code>VisibleAt(p,I)</code></td><td>人物在区间 \(I\) 可见</td><td>人脸/人体轨迹</td></tr>
+        <tr><td><code>LipSync(u,m)</code></td><td>台词与嘴部轨迹同步</td><td>音画同步模型</td></tr>
+        <tr><td><code>SameID(f,p)</code></td><td>跨镜头轨迹属于目标人物</td><td>人脸/人体身份特征</td></tr>
+        <tr><td><code>Preserve(z,I)</code></td><td>非目标内容应保持</td><td>源—结果局部差异</td></tr>
+      </tbody>
+    </table>
+
+    <p>目标不是最大化单一感知分数，而是在修复失败集合 \(\mathcal F\) 的同时，最小化重执行成本、修改范围及对原通过集合 \(\mathcal P\) 的破坏：</p>
+    <div class="equation">
+      \(\rho^\star=\arg\min_{\rho}\ C(\rho)+\lambda S(\rho)+\mu R(\rho;\mathcal P),\quad
+      \text{s.t.}\ \Pr[c_i(X^\star)=1]\ge\tau,\ \forall c_i\in\mathcal F.\)
+      <span class="eqno">(2)</span>
+    </div>
+  </div>
+</section>
+
+<!-- PAGE 3 -->
+<section class="paper-page">
+  <h2 class="page-title">PersonaRepair · 方法总览</h2>
+  <figure class="full">
+    <img src="/opt/cursor/artifacts/assets/fig2_method_architecture.png" alt="PersonaRepair 系统架构" />
+    <figcaption><b>图 2.</b> 方法总览。蓝色模块为训练模块，灰色模块为冻结的专业编辑器，橙色模块为约束优化算法。共享 Audio-Video MLLM 使用状态 Adapter 编译人物中心状态，使用诊断 Adapter 比较源视频和编辑结果；工具效果模型预测候选操作的修复收益与副作用；优化器只将失败的时间—空间—模态范围送回编辑器。</figcaption>
+  </figure>
+
+  <div class="columns" style="height: 192mm;">
+    <h2>4. 方法</h2>
+    <h3>4.1 总体流程</h3>
+    <p>PersonaRepair 位于任意编辑 Agent 与专业编辑器之上，包含四步。首先，状态构建器将长视频组织成镜头、人物轨迹、声纹簇、带时间戳台词和音频事件，并把用户指令编译为目标与保护约束。其次，已有 Agent 调用人物—台词替换、画外音修改或纯视觉修改等工具，得到初始结果 \(\hat X\)。第三，诊断器在源—结果对上逐约束预测满足概率、错误区间和责任动作。第四，效果感知优化器选择最小修复动作集；每轮修复后，系统重验失败约束及其邻域，直至全部通过或耗尽预算。</p>
+
+    <h3>4.2 人物中心音画状态</h3>
+    <p>对长视频直接均匀采样会丢失短台词和镜头切换。我们采用分层索引。镜头层通过切镜检测得到 \(S=\{s_j\}\)；人物层使用人脸/人体跟踪形成轨迹 \(F=\{f_l\}\)，并跨镜头聚类为人物 \(P=\{p_m\}\)；语音层通过 ASR 和 forced alignment 得到台词 \(U=\{u_h\}\)，通过 speaker diarization 得到声纹簇 \(W=\{w_g\}\)；主动说话人检测建立可见人物与台词的高置信锚点，未匹配台词再通过声纹原型和上下文补充为画外发声。</p>
+    <p>共享 AV-MLLM 的 State Adapter 接收指令 \(q\)、镜头摘要、关键帧、轨迹裁剪、台词及声纹检索结果，输出结构化约束集合 \(\mathcal C_q\)。为了防止模型“用自然语言猜测时间”，所有实体引用必须绑定到前端提供的 ID 和时间戳；无法绑定的目标被标记为 <code>UNRESOLVED</code>，交给用户澄清而非执行。</p>
+
+    <div class="callout">
+      <b>设计选择。</b> 状态图不是本文的新算法，而是诊断接口。其价值在于把“看起来不对”转换为可监督的约束原子：谁、与什么关系、在哪段时间、涉及哪个模态、由哪次操作产生。
+    </div>
+
+    <h3>4.3 约束类型</h3>
+    <p>约束分为三组：</p>
+    <ul>
+      <li><b>目标约束</b>：新人物身份、新台词内容、新声纹、视觉属性等必须成立；</li>
+      <li><b>耦合约束</b>：人物—声纹绑定、speaker–utterance attribution、唇音同步、动作—声音时序等必须一致；</li>
+      <li><b>保护约束</b>：非目标人物、背景、环境声、音乐及指令外时间区间应保持。</li>
+    </ul>
+    <p>对画内/画外切换，系统不使用单一 clip 标签，而定义逐台词可见函数 \(v(p,u,t)\) 和嘴部可观测函数 \(m(p,u,t)\)。因此同一句跨切镜台词可以在前半段触发口型编辑，后半段仅修改音频：</p>
+    <div class="equation">
+      \(\mathcal M(u,t)=
+      \begin{cases}
+      \{\text{speech},\text{video-mouth}\}, & v=1,m=1,\\
+      \{\text{speech},\text{video-body}\}, & v=1,m=0,\\
+      \{\text{speech}\}, & v=0.
+      \end{cases}\)
+      <span class="eqno">(3)</span>
+    </div>
+
+    <h3>4.4 初始工具执行</h3>
+    <p>本文假设三个可替换执行器：\(T^{pv}\) 负责人像与台词联合替换，\(T^a\) 负责画外/非视觉音频编辑，\(T^v\) 负责纯视觉修改。它们通过统一动作接口接收：</p>
+    <div class="algorithm">
+      <div class="title">动作接口 \(a=(T,\Omega,I,\mathcal M,\theta,D)\)</div>
+      <div><b>工具</b> \(T\)；<b>目标实体</b> \(\Omega\)；<b>时间区间</b> \(I\)；<b>可改模态</b> \(\mathcal M\)；<b>参数</b> \(\theta\)；<b>依赖动作</b> \(D\)。每个动作同时记录输入资产哈希、输出资产、空间掩码及执行日志，供后续责任归因。</div>
+    </div>
+    <p>执行器在主实验中冻结，确保改进来自诊断与修复策略，而非更强生成模型。我们同时测试不同后端，以验证框架不依赖某个专有编辑器。</p>
+
+    <h3>4.5 与 AVE-Agent 的方法差异</h3>
+    <table>
+      <thead><tr><th>维度</th><th>AVE-Agent [1]</th><th>PersonaRepair</th></tr></thead>
+      <tbody>
+        <tr><td>主要图结构</td><td>编辑子任务拓扑</td><td>最终成片可验证约束</td></tr>
+        <tr><td>反馈粒度</td><td>局部尝试/合成结果评价</td><td>人物、关系、时间、模态</td></tr>
+        <tr><td>修复决策</td><td>重试、重混、重生成、重规划</td><td>效果预测＋约束最优化</td></tr>
+        <tr><td>保护机制</td><td>评价中的 fidelity</td><td>已通过约束的硬/机会约束</td></tr>
+        <tr><td>主要场景</td><td>通用音视频编辑</td><td>长视频多说话人编辑</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- PAGE 4 -->
+<section class="paper-page">
+  <h2 class="page-title">PersonaRepair · 细粒度音画诊断</h2>
+  <div class="columns">
+    <h3>4.6 共享 AV-MLLM 诊断器</h3>
+    <p>诊断器 \(D_\phi\) 使用与状态构建器共享的 AV-MLLM 骨干和独立 Diagnosis Adapter。对于每个约束 \(c_i\)，模型接收源视频证据 \(X[I_i]\)、编辑视频证据 \(\hat X[I_i]\)、实体裁剪、源/目标台词及工具轨迹摘要，输出：</p>
+    <div class="equation">
+      D_\phi(c_i,X,\hat X,\tau)=
+      (\hat z_i,\hat I_i,\hat e_i,\hat b_i),
+      <span class="eqno">(4)</span>
+    </div>
+    <p>其中 \(\hat z_i\in[0,1]\) 为约束满足概率，\(\hat I_i\) 为错误证据区间，\(\hat e_i\) 为错误类型，\(\hat b_i\) 为责任动作分布。诊断器不是完全替代专业指标，而是融合可验证证据：</p>
+    <ul>
+      <li>ASR/forced alignment：台词内容、词边界和缺失；</li>
+      <li>speaker verification：声纹保持与人物—声纹绑定；</li>
+      <li>active speaker 与 lip-sync：可见说话者和时间偏移；</li>
+      <li>face/person re-identification：跨镜头视觉身份；</li>
+      <li>source–result masked difference：非目标视觉/音频保持。</li>
+    </ul>
+    <p>这些工具输出被编码为 evidence tokens，与局部音视频 token 共同输入 MLLM。这样既利用专用模型的可测量性，又允许 MLLM 在遮挡、转场和多源冲突时进行上下文判断。</p>
+
+    <h3>4.7 时间证据定位</h3>
+    <p>为了处理长区间中的短失败，我们将每个约束区间切分为多尺度窗口 \(\{I_i^{(r)}\}\)。模型先在粗窗口判断是否存在违反，再对高风险窗口预测起止边界。时间定位损失为：</p>
+    <div class="equation">
+      \(\mathcal L_{\mathrm{loc}}=
+      \mathcal L_{\mathrm{IoU}}(\hat I_i,I_i^\dagger)
+      +\beta\left(|\hat t_i^s-t_i^{s\dagger}|+
+      |\hat t_i^e-t_i^{e\dagger}|\right).\)
+      <span class="eqno">(5)</span>
+    </div>
+    <p>训练时除真实编辑失败外，我们进行可控故障注入：局部音频平移、单词替换、声纹交换、错误人物激活、身份漂移、画外音视觉泄漏、非目标音频污染和过宽编辑边界。故障参数提供精确时间监督，避免仅依赖 MLLM 自标注。</p>
+
+    <h3>4.8 责任操作归因</h3>
+    <p>同一失败可能由多个动作造成。例如嘴型不同步可能来自新语音时长变化、口型模型失败或合成时间轴偏移。我们构造操作—资产 provenance DAG：边表示动作消费或产生某资产。对失败证据区间，先检索所有写入相关模态与区间的祖先动作，再由诊断器预测责任概率：</p>
+    <div class="equation">
+      \(\hat b_{ij} =
+      \Pr(a_j\text{ caused }c_i\text{ failure}\mid
+      X,\hat X,\tau,\mathcal G_{\mathrm{prov}}).\)
+      <span class="eqno">(6)</span>
+    </div>
+    <p>监督来自真实轨迹中的人工修正记录与单因素故障注入。多动作共同造成的失败采用 multi-hot 标签，而不是强迫单一归因。</p>
+
+    <h3>4.9 诊断训练目标</h3>
+    <div class="equation">
+      \(\mathcal L_D =
+      \mathcal L_{\mathrm{sat}}
+      \lambda_{\mathrm{loc}}\mathcal L_{\mathrm{loc}}
+      \lambda_{\mathrm{type}}\mathcal L_{\mathrm{type}}
+      \lambda_{\mathrm{blame}}\mathcal L_{\mathrm{blame}}
+      +\lambda_{\mathrm{cal}}\mathcal L_{\mathrm{cal}}.\)
+      <span class="eqno">(7)</span>
+    </div>
+    <p>\(\mathcal L_{\mathrm{sat}}\) 为约束满足二分类损失，\(\mathcal L_{\mathrm{type}}\) 为错误类型交叉熵，\(\mathcal L_{\mathrm{blame}}\) 为责任动作多标签损失。由于优化器直接使用概率，我们加入可微校准损失 \(\mathcal L_{\mathrm{cal}}\)，并在验证集上做温度缩放。低置信度约束不会自动重生成，而进入人工复核队列。</p>
+
+    <figure>
+      <img src="/opt/cursor/artifacts/assets/fig3_diagnosis_repair.png" alt="三类音画错误的定位与定点修复" />
+      <figcaption><b>图 3.</b> 三类典型诊断：画内台词的局部唇音错误、只允许改音频的画外音，以及跨镜头人物身份漂移。每次修复只开放必要区间、区域和模态，并复验未修改内容。</figcaption>
+    </figure>
+
+    <h3>4.10 为什么不能只用一个 MLLM Judge？</h3>
+    <p>直接询问闭源 MLLM“编辑是否成功”存在四个问题：其一，长视频采样可能错过短失败；其二，总体评分掩盖人物绑定错误；其三，缺少可校准置信度和精确时间监督；其四，无法区分生成工具与合成步骤的责任。我们因此将诊断拆为“专业证据提取＋共享 AV-MLLM 关系推理＋时间定位＋provenance 归因”，并分别报告每部分性能。</p>
+
+    <h3>4.11 诊断输出示例</h3>
+    <div class="algorithm">
+      <div class="title">结构化诊断记录</div>
+      <code>{
+  person: "P03",
+  relation: "LipSync(U18, M07)",
+  status: "FAIL",
+  evidence: [746.2, 747.1],
+  offset_ms: 240,
+  passed_neighbors: [
+    "SpokenBy(U18,P03)",
+    "SameVoice(W03,P03)",
+    "Preserve(BG,[744,749])"
+  ],
+  blamed_actions: {"lip_edit_05": 0.81}
+}</code>
+    </div>
+    <p>该结构既可供优化器消费，也便于人类编辑师检查。自然语言解释仅作为界面输出，决策依赖结构化字段及校准概率。</p>
+  </div>
+</section>
+
+<!-- PAGE 5 -->
+<section class="paper-page">
+  <h2 class="page-title">PersonaRepair · 效果感知的最小无回退修复</h2>
+  <div class="columns">
+    <h3>4.12 工具效果模型</h3>
+    <p>静态工具说明无法描述生成式编辑器的真实能力边界。同一个人物编辑器在正脸短镜头上可能稳定，在遮挡、侧脸或多人镜头上则容易改变背景。我们训练轻量效果模型 \(E_\psi\)，输入当前媒体状态摘要、候选动作 \(a_j\)、目标约束及工具历史，预测：</p>
+    <div class="equation">
+      E_\psi(a_j,c_i,x)=
+      (g_{ji},r_{ji},\hat\Omega_j,\hat C_j),
+      <span class="eqno">(8)</span>
+    </div>
+    <p>其中 \(g_{ji}\) 是动作修复约束 \(c_i\) 的概率，\(r_{ji}\) 是破坏已通过约束的概率，\(\hat\Omega_j\) 是预计影响的时间—空间—模态范围，\(\hat C_j\) 是算力/API 成本。模型可由小型 Transformer 或 MLP 实现，不需要另一个大 VLM。训练样本来自执行日志；对从未组合过的动作，使用不确定性上界提高风险成本。</p>
+
+    <h3>4.13 候选修复动作生成</h3>
+    <p>对于失败约束集合 \(\mathcal F\)，系统从责任动作、相关实体和工具 schema 生成候选集 \(\mathcal A_R\)。每个候选动作可以缩小时间区间、空间掩码或可写模态。例如，若声音已通过而唇音失败，候选应包括“固定音频，仅重做嘴部”；不应默认包含“重新生成台词”。候选的区间以失败证据 \(\hat I_i\) 加工具所需上下文边界 \(\delta_T\) 得到：</p>
+    <div class="equation">
+      I(a_j)=
+      \operatorname{Hull}\{\hat I_i:c_i\in\operatorname{cover}(a_j)\}
+      \oplus \delta_{T_j}.
+      <span class="eqno">(9)</span>
+    </div>
+
+    <h3>4.14 约束优化</h3>
+    <p>令二元变量 \(x_j\) 表示是否执行候选动作 \(a_j\)，\(d_j\)、\(s_j\)、\(c_j\) 分别表示重做时长、空间—模态范围和成本。我们求解：</p>
+    <div class="equation">
+      \(\min_{\mathbf x}\sum_j x_j(c_j+\lambda_d d_j+\lambda_s s_j)
+      +\lambda_r\sum_{i\in\mathcal P}\xi_i\)
+      <span class="eqno">(10)</span>
+    </div>
+    <p>满足失败覆盖、无回退、动作依赖与互斥约束：</p>
+    <div class="equation">
+      \(\sum_j g_{ji}x_j\ge\tau_i,\quad \forall i\in\mathcal F;\)
+      <br/>
+      \(\sum_j r_{ji}x_j\le\epsilon_i+\xi_i,\quad \forall i\in\mathcal P;\)
+      <br/>
+      \(x_j\le x_k\ (a_j\Rightarrow a_k),\qquad x_j+x_k\le1\ (a_j\perp a_k).\)
+      <span class="eqno">(11)</span>
+    </div>
+    <p>\(\xi_i\) 是高代价松弛变量，用于无可行硬解的情况。实现上使用整数线性规划；大规模候选集先按支配关系剪枝，再采用滚动时间窗求解。该优化不是声称新的 ILP 算法，而是首次将人物中心成片约束、学习到的工具副作用和 no-regression 统一为可求解的音视频修复问题。</p>
+
+    <div class="algorithm">
+      <div class="title">算法 1：PersonaRepair 推理与修复</div>
+      <ol>
+        <li>从 \(X,q\) 构建实体索引和约束集合 \(\mathcal C_q\)。</li>
+        <li>执行基础编辑 Agent，获得 \(\hat X,\tau\)。</li>
+        <li>对每个 \(c_i\)，由 \(D_\phi\) 预测 \((\hat z_i,\hat I_i,\hat e_i,\hat b_i)\)。</li>
+        <li>设置 \(\mathcal F=\{c_i:\hat z_i&lt;\tau_i\}\)，\(\mathcal P=\mathcal C_q\setminus\mathcal F\)。若 \(\mathcal F=\varnothing\)，返回 \(\hat X\)。</li>
+        <li>根据失败证据、责任动作和工具 schema 生成 \(\mathcal A_R\)。</li>
+        <li>使用 \(E_\psi\) 预测 \(g,r,\Omega,C\)，求解式 (10–11)。</li>
+        <li>仅在选定范围执行修复动作，得到 \(X'\)。</li>
+        <li>重验 \(\mathcal F\) 及其约束邻域；若通过则返回，否则在预算内重复步骤 5–8。</li>
+      </ol>
+    </div>
+
+    <h3>4.15 邻域复验与无回退</h3>
+    <p>仅重验失败项会漏掉修复造成的新问题。我们定义动作 \(a\) 的验证邻域：</p>
+    <div class="equation">
+      \(\mathcal N(a)=
+      \{c_i:\mathcal M_i\cap\mathcal M(a)\neq\varnothing,\
+      I_i\cap I(a)\neq\varnothing,\
+      \operatorname{entity}(c_i)\cap\Omega(a)\neq\varnothing\}
+      \cup\operatorname{Dep}(a).\)
+      <span class="eqno">(12)</span>
+    </div>
+    <p>修复后必须重验 \(\mathcal F\cup\bigcup_a\mathcal N(a)\)。我们定义 No-Regression Rate：</p>
+    <div class="equation">
+      \(\mathrm{NRR}=
+      \frac{|\{c_i\in\mathcal P: c_i(X')=1\}|}{|\mathcal P|}.\)
+      <span class="eqno">(13)</span>
+    </div>
+    <p>如果目标被修复但 NRR 低于阈值，系统回滚到前一版本，将新发现的副作用写入工具效果缓存并重新求解。这让“局部修复”不只是较小的 crop，而是对已正确语义关系有显式保护。</p>
+
+    <h3>4.16 复杂度</h3>
+    <p>状态提取和诊断按镜头及约束并行。设候选动作数为 \(M\)、约束数为 \(N\)，效果矩阵推理为 \(O(MN)\)。ILP 在最坏情况下为 NP-hard，但实际通过时间不相交分解、动作支配剪枝和每轮候选上限控制规模。我们将报告优化时间及其占总生成耗时的比例。</p>
+
+    <h3>4.17 失败处理</h3>
+    <p>当实体身份、台词归属或可见性置信度不足时，系统不自动执行高风险生成。它返回可核验问题，如“12:26 处存在两个相似人物，目标是 P03 还是 P07？”当所有候选动作均违反保护约束时，系统给出不可行证书和最小冲突约束集合，而不是通过放宽保护条件强行生成。</p>
+  </div>
+</section>
+
+<!-- PAGE 6 -->
+<section class="paper-page">
+  <h2 class="page-title">PersonaRepair · 数据、训练与评测集设计</h2>
+  <div class="columns">
+    <h2>5. 数据与训练</h2>
+    <h3>5.1 轨迹数据</h3>
+    <p>训练数据来自两部分。第一部分是人工后期轨迹：编辑师给出自然语言需求，手工确定目标人物、时间段、工具、参数与修复步骤，系统记录所有中间产物和最终验收。第二部分是自动扩展轨迹：在获得授权的视频上执行冻结编辑器，并对输出注入参数已知的局部故障。每条样本包含：</p>
+    <ul>
+      <li>源视频、分离音轨、镜头边界及时间戳；</li>
+      <li>跨镜头人物 ID、人脸/人体轨迹、声纹参考；</li>
+      <li>逐词台词、speaker、active/off-screen 和嘴部可见标签；</li>
+      <li>编辑指令、目标/保护约束和工具轨迹；</li>
+      <li>编辑后视频、失败类型、证据区间、责任操作；</li>
+      <li>人工或可验证的合法修复动作及修复后状态。</li>
+    </ul>
+
+    <h3>5.2 故障注入</h3>
+    <table>
+      <thead><tr><th>类别</th><th>故障</th><th>监督信号</th></tr></thead>
+      <tbody>
+        <tr><td>台词</td><td>替换/删除词、截断、时长漂移</td><td>词与时间区间</td></tr>
+        <tr><td>声纹</td><td>目标/非目标 speaker swap、局部漂移</td><td>人物—声纹边</td></tr>
+        <tr><td>同步</td><td>局部音频平移、错误嘴部驱动</td><td>offset 与区间</td></tr>
+        <tr><td>身份</td><td>单镜头人脸或服装漂移</td><td>轨迹与人物 ID</td></tr>
+        <tr><td>归属</td><td>错误 active speaker、台词分配错误</td><td>人物—台词边</td></tr>
+        <tr><td>保护</td><td>背景、环境声、非目标人物泄漏</td><td>允许修改范围</td></tr>
+        <tr><td>边界</td><td>编辑区间过宽、接缝闪烁/爆音</td><td>最小合法区间</td></tr>
+      </tbody>
+    </table>
+
+    <h3>5.3 训练阶段</h3>
+    <ol>
+      <li><b>状态 Adapter SFT。</b> 从视频索引和指令输出实体引用及约束原子；采用节点、关系、时间边界和保护范围的联合监督。</li>
+      <li><b>诊断 Adapter SFT。</b> 在真实与注入故障上训练式 (7)，随后以困难负例和 pairwise preference 校准解释与证据一致性。</li>
+      <li><b>效果模型训练。</b> 使用工具调用前后约束变化监督 \(g_{ji},r_{ji},\Omega_j,C_j\)。按视频、人物和编辑器版本划分数据，避免执行记忆泄漏。</li>
+      <li><b>可选策略微调。</b> 在完整系统稳定后，以约束满足、NRR、修改范围和成本组成可验证奖励，对候选生成策略进行 GRPO；主实验必须保留无 RL 版本，证明核心收益来自诊断与优化。</li>
+    </ol>
+
+    <div class="callout green">
+      <b>模型配置。</b> 状态建模和诊断共享一个开源 Audio-Video MLLM 骨干，使用两个 LoRA Adapter；效果模型为轻量网络；修复优化器不训练；三个专业编辑器默认冻结。三个创新点并不对应三个 VLM。
+    </div>
+
+    <h2>6. PersonaRepair-Bench</h2>
+    <p>现有 AVE-Compass [1] 评测通用音视频编辑，MTAVG-Bench [25] 评测多说话人音视频生成故障，CineSRD [17] 评测影视说话人标注，但均不提供长视频编辑前后对、关系级时间证据和最小修复标注。我们因此设计 PersonaRepair-Bench。此处规模均为待完成目标，不能作为已实现事实。</p>
+
+    <table>
+      <thead><tr><th>划分</th><th>建议规模</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td>Core</td><td>2–20 分钟，多人物</td><td>主诊断与修复</td></tr>
+        <tr><td>Long</td><td>30–90 分钟</td><td>长程身份/成本压力测试</td></tr>
+        <tr><td>Hard</td><td>遮挡、相似人物、重叠语音</td><td>困难感知与归因</td></tr>
+        <tr><td>Injected</td><td>参数可控故障</td><td>精确定位与最小性评价</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.1 编辑任务</h3>
+    <ul>
+      <li>人物外观＋台词＋声纹联合替换；</li>
+      <li>只改台词并保持人物外观和声纹；</li>
+      <li>只改人物外观并保持台词及声音；</li>
+      <li>画外音修改且画面严格保持；</li>
+      <li>纯视觉修改且对白、音乐和环境声保持；</li>
+      <li>上述操作在同一长视频中的混合组合。</li>
+    </ul>
+
+    <h3>6.2 数据划分与合规</h3>
+    <p>人物身份和素材来源必须获得编辑及研究授权。训练、验证和测试按人物身份、作品及来源划分，禁止同一人物跨集合泄漏。涉及真实人物替换的样本只在受控研究环境发布特征或授权片段；公开演示添加可见与机器可读水印，并保存编辑 provenance。</p>
+
+    <h3>6.3 指标</h3>
+    <p><b>诊断：</b>约束 F1/AUROC、Expected Calibration Error、错误区间 mAP、Temporal IoU、边界误差、责任动作 Recall@k。<b>编辑：</b>台词 WER/CER、speaker EER、active-speaker mAP、lip-sync offset、跨镜头身份一致性、非目标视觉/音频保持。<b>修复：</b>单轮/预算内修复成功率、NRR、修改时长比例、修改像素/音频比例、工具调用次数和总成本。</p>
+  </div>
+</section>
+
+<!-- PAGE 7 -->
+<section class="paper-page">
+  <h2 class="page-title">PersonaRepair · 实验设计与待填结果</h2>
+  <div class="columns">
+    <h2>7. 实验</h2>
+    <p><span class="status">待实测</span> 本节给出符合 CVPR 论文要求的实验协议，不虚构任何数字。完成系统后，应固定测试集、后端版本、随机种子和调用预算，再填入表格。</p>
+
+    <h3>7.1 研究问题</h3>
+    <ul>
+      <li><b>RQ1：</b>人物中心诊断是否比总体 MLLM Judge 和独立专业指标更准确地定位跨模态失败？</li>
+      <li><b>RQ2：</b>效果感知优化是否比全量重生成、规则重试和 AVE-Agent 式反馈重试减少修改范围与副作用？</li>
+      <li><b>RQ3：</b>方法是否随视频时长、人物数、镜头数和画外音比例稳定扩展？</li>
+      <li><b>RQ4：</b>改进来自诊断、效果预测还是优化约束？不同编辑后端下是否成立？</li>
+    </ul>
+
+    <h3>7.2 Baselines</h3>
+    <p><b>编辑 Agent：</b>直接单次执行、GPT/Video-MLLM ReAct、AVE-Agent [1]、VideoAgent [13]。<b>诊断：</b>单一 Omni-MLLM、AVE-Compass checklist、ASR/声纹/ASD/SyncNet 独立阈值、无关系建模的 ensemble。<b>修复：</b>不修复、全段重生成、失败分支重试、固定窗口局部重做、Crayotter 式选择性重执行 [14]、RefineCut 式 ledger patch [24]。<b>上界：</b>人工/Oracle 失败区间＋相同修复后端。</p>
+
+    <h3>7.3 主结果表</h3>
+    <table class="wide">
+      <thead>
+        <tr><th>方法</th><th>约束 F1 ↑</th><th>tIoU ↑</th><th>修复成功 ↑</th><th>NRR ↑</th><th>修改时长 ↓</th><th>成本 ↓</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Direct, no repair</td><td>—</td><td>—</td><td>待测</td><td>—</td><td>—</td><td>待测</td></tr>
+        <tr><td>Omni-MLLM reflection</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td>AVE-Agent-style</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td>Independent metrics + rule repair</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td><b>PersonaRepair</b></td><td><b>待测</b></td><td><b>待测</b></td><td><b>待测</b></td><td><b>待测</b></td><td><b>待测</b></td><td><b>待测</b></td></tr>
+        <tr><td>Oracle localization</td><td>—</td><td>100</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7.4 分类结果</h3>
+    <table>
+      <thead><tr><th>场景</th><th>成功率</th><th>非目标保持</th><th>NRR</th></tr></thead>
+      <tbody>
+        <tr><td>画内台词替换</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td>画外音修改</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td>纯视觉修改</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td>跨镜头人物替换</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td>多人/重叠语音</td><td>待测</td><td>待测</td><td>待测</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7.5 消融实验</h3>
+    <table>
+      <thead><tr><th>变体</th><th>定位 F1</th><th>修复成功</th><th>NRR</th><th>范围</th></tr></thead>
+      <tbody>
+        <tr><td>完整模型</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td>− 专业 evidence tokens</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td>− 时间定位监督</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td>− 责任操作归因</td><td>待测</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td>− Effect Model，使用固定风险</td><td>—</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td>− No-Regression 约束</td><td>—</td><td>待测</td><td>待测</td><td>待测</td></tr>
+        <tr><td>ILP → 贪心</td><td>—</td><td>待测</td><td>待测</td><td>待测</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7.6 关键控制实验</h3>
+    <p><b>Oracle 分解。</b> 分别提供 Oracle 人物轨迹、ASR、speaker、可见性和失败区间，定位瓶颈究竟来自感知、关系推理还是编辑后端。<b>等范围对照。</b> 随机选取与本方法相同时长的区间进行修复，证明收益不只是“编辑得更少”。<b>同后端公平性。</b> 所有方法共享相同编辑器、最大重试次数和推理预算。<b>后端迁移。</b> 更换人物/音频/视觉模型后，仅更新少量 Effect Model 数据，测试是否仍能规划。</p>
+
+    <h3>7.7 长度与复杂度扩展</h3>
+    <p>按视频时长（2、10、30、60+ 分钟）、人物数量、镜头数量、台词密度和画外音比例分桶。报告诊断召回、身份错误率、优化耗时、缓存命中和总成本曲线。若性能随长度显著下降，不能仅给平均结果掩盖。</p>
+
+    <h3>7.8 人类评价</h3>
+    <p>专业编辑师在不知道方法名称的情况下成对比较：目标完成、人物/台词归属、音画自然度、非目标保持和是否愿意直接采用。另要求标注“最早可见失败时间”，用于验证自动定位与人的一致性。评价者应使用耳机观看原速视频，并允许回放；报告 inter-rater agreement 和显著性检验。</p>
+
+    <h3>7.9 预期失败分析</h3>
+    <p>重点分析五类失败：多人同时发声导致 attribution 不确定；背脸/遮挡导致 active-speaker 证据缺失；编辑器改变动作使旧时间对齐失效；环境混响导致声纹漂移；极长视频中人物外观变化使跨镜头聚类错误。每类至少提供源视频、初始结果、诊断、选定修复和最终结果的完整案例。</p>
+
+    <div class="callout orange">
+      <b>达到强投稿的必要证据。</b> 仅证明最终质量优于 AVE-Agent 不够。必须同时证明：错误区间定位更准、重做范围更小、已正确内容退化更少，并且优势在长视频、多人物和画外音条件下扩大。
+    </div>
+  </div>
+</section>
+
+<!-- PAGE 8 -->
+<section class="paper-page">
+  <h2 class="page-title">PersonaRepair · 局限、结论与参考文献</h2>
+  <div class="columns" style="height: 90mm;">
+    <h2>8. 局限与社会影响</h2>
+    <p><b>感知上限。</b> 当人物长期不露面、多人声纹相似、语音重叠或字幕错误时，人物—台词绑定可能不可辨识。系统应暴露不确定性并请求确认，不能把 MLLM 推测当事实。</p>
+    <p><b>最小性范围。</b> 式 (10) 在给定候选动作和效果概率下求最优，不代表对所有可能生成操作的全局最小；Effect Model 的分布外误差也可能导致风险低估。论文应把结论限定为“候选集内效果感知的最小修复”。</p>
+    <p><b>指标局限。</b> WER、speaker similarity 和 lip-sync 指标不能完全代表人类感知，尤其受姿态、裁剪和压缩影响。自动指标必须与专家评价共同报告。</p>
+    <p><b>滥用风险。</b> 人物、台词和声纹替换可被用于冒充、欺骗和未经同意的深度伪造。训练与测试须使用授权素材；输出应嵌入可见/不可见水印、C2PA 类 provenance 和编辑日志；对真实公众人物实施身份及授权策略；不发布可直接移除溯源的默认配置。</p>
+
+    <h2>9. 结论</h2>
+    <p>本文提出 PersonaRepair，将长视频音视频编辑从“整体评价后重新生成”转化为“人物中心诊断、工具副作用预测和最小无回退修复”。方法不把通用任务图或电影知识图作为新颖点，而是在最终渲染媒体中定位人物—声纹—台词—可见性—嘴部关系的具体失败证据，并通过约束优化选择最小修复动作。该定位使 PersonaRepair 与通用 AVE-Agent 形成互补：后者负责广泛任务分解与执行，前者提供面向长视频多说话人的可靠性层。未来工作包括不确定性感知的人机协作、跨语言台词编辑、因果工具效果估计以及经过授权的规模化真实后期轨迹学习。</p>
+
+    <div class="callout">
+      <b>投稿前检查。</b> 替换全部“待测”数字；确认三项主张均有直接消融；加入 AVE-Agent、AVA-Encoder/linked editing、RefineCut/NeuS-E 等最邻近基线；公开数据许可和伦理协议；正文保持 8 页，参考文献可按正式 CVPR 模板另页处理。
+    </div>
+  </div>
+
+  <h2 style="margin-top:2mm;">参考文献</h2>
+  <div class="refs">
+    <p>[1] Y. Wen et al. <a href="https://arxiv.org/abs/2607.24821">AVE-Compass: Towards Holistic Evaluation for Audio-Video Editing Abilities</a>. arXiv, 2026.</p>
+    <p>[2] H. B. Duan et al. <a href="https://arxiv.org/abs/2608.12313">AVA-Encoder: Towards Agent-Native Video Representation Learning</a>. arXiv, 2026.</p>
+    <p>[3] H. Zheng et al. <a href="https://arxiv.org/abs/2605.18467">InstructAV2AV: Instruction-Guided Audio-Video Joint Editing</a>. SIGGRAPH Asia, 2026.</p>
+    <p>[4] H. Zheng et al. <a href="https://openaccess.thecvf.com/content/CVPR2026/html/Zheng_Audio-sync_Video_Instance_Editing_with_Granularity-Aware_Mask_Refiner_CVPR_2026_paper.html">Audio-sync Video Instance Editing with Granularity-Aware Mask Refiner</a>. CVPR, 2026.</p>
+    <p>[5] Z. Jiang et al. <a href="https://openaccess.thecvf.com/content/ICCV2025/html/Jiang_VACE_All-in-One_Video_Creation_and_Editing_ICCV_2025_paper.html">VACE: All-in-One Video Creation and Editing</a>. ICCV, 2025.</p>
+    <p>[6] S. Yu et al. <a href="https://openaccess.thecvf.com/content/ICCV2025/html/Yu_VEGGIE_Instructional_Editing_and_Reasoning_Video_Concepts_with_Grounded_Generation_ICCV_2025_paper.html">VEGGIE: Instructional Editing and Reasoning Video Concepts with Grounded Generation</a>. ICCV, 2025.</p>
+    <p>[7] Y. Liang et al. <a href="https://openaccess.thecvf.com/content/CVPR2026/html/Liang_CoT-Edit_Let_CoT_Guide_Instruction_Video_Editing_CVPR_2026_paper.html">CoT-Edit: Let CoT Guide Instruction Video Editing</a>. CVPR, 2026.</p>
+    <p>[8] Z. Yang et al. <a href="https://openaccess.thecvf.com/content/CVPR2026/html/Yang_VideoCoF_Unified_Video_Editing_with_Temporal_Reasoner_CVPR_2026_paper.html">VideoCoF: Unified Video Editing with Temporal Reasoner</a>. CVPR, 2026.</p>
+    <p>[9] Y. Cong et al. <a href="https://openaccess.thecvf.com/content/CVPR2026/html/Cong_VIVA_VLM-Guided_Instruction-Based_Video_Editing_with_Reward_Optimization_CVPR_2026_paper.html">VIVA: VLM-Guided Instruction-Based Video Editing with Reward Optimization</a>. CVPR, 2026.</p>
+    <p>[10] S. Lin et al. <a href="https://openaccess.thecvf.com/content/WACV2026/html/Lin_Zero-Shot_Audio-Visual_Editing_via_Cross-Modal_Delta_Denoising_WACV_2026_paper.html">Zero-Shot Audio-Visual Editing via Cross-Modal Delta Denoising</a>. WACV, 2026.</p>
+    <p>[11] S. H. Wang et al. <a href="https://dl.acm.org/doi/10.1145/3721238.3730761">EditDuet: A Multi-Agent System for Video Non-Linear Editing</a>. SIGGRAPH, 2025.</p>
+    <p>[12] Z. Liu et al. <a href="https://arxiv.org/abs/2511.08521">UniVA: Universal Video Agent towards Open-Source Next-Generation Video Generalist</a>. arXiv, 2025.</p>
+    <p>[13] HKUDS. <a href="https://arxiv.org/abs/2606.23327">VideoAgent: All-in-One Framework for Video Understanding and Editing</a>. arXiv, 2026.</p>
+    <p>[14] Y. Zheng et al. <a href="https://arxiv.org/abs/2606.07636">Crayotter: Traceable Multi-Agent Workflows for Long-Form Video Editing</a>. arXiv, 2026.</p>
+    <p>[15] B. He et al. <a href="https://openaccess.thecvf.com/content/CVPR2024/html/He_MA-LMM_Memory-Augmented_Large_Multimodal_Model_for_Long-Term_Video_Understanding_CVPR_2024_paper.html">MA-LMM: Memory-Augmented Large Multimodal Model for Long-Term Video Understanding</a>. CVPR, 2024.</p>
+    <p>[16] L. Chen et al. <a href="https://openaccess.thecvf.com/content/ICCV2025/html/Chen_LVAgent_Long_Video_Understanding_by_Multi-Round_Dynamical_Collaboration_of_MLLM_ICCV_2025_paper.html">LVAgent: Long Video Understanding by Multi-Round Dynamical Collaboration of MLLM Agents</a>. ICCV, 2025.</p>
+    <p>[17] Y. Huang et al. <a href="https://openaccess.thecvf.com/content/CVPR2026/html/Huang_CineSRD_Leveraging_Visual_Acoustic_and_Linguistic_Cues_for_Open-World_Visual_CVPR_2026_paper.html">CineSRD: Open-World Visual Media Speaker Diarization</a>. CVPR, 2026.</p>
+    <p>[18] J. Wang et al. <a href="https://openaccess.thecvf.com/content/CVPR2024/html/Wang_LoCoNet_Long-Short_Context_Network_for_Active_Speaker_Detection_CVPR_2024_paper.html">LoCoNet: Long-Short Context Network for Active Speaker Detection</a>. CVPR, 2024.</p>
+    <p>[19] K. Min et al. <a href="https://www.ecva.net/papers/eccv_2022/papers_ECCV/html/6599_ECCV_2022_paper.php">Learning Long-Term Spatial-Temporal Graphs for Active Speaker Detection</a>. ECCV, 2022.</p>
+    <p>[20] R. Tao et al. <a href="https://arxiv.org/abs/2107.06592">Is Someone Speaking? Exploring Long-Term Temporal Features for Audio-Visual Active Speaker Detection</a>. ACM MM, 2021.</p>
+    <p>[21] A. Sharan et al. <a href="https://openaccess.thecvf.com/content/CVPR2025/html/Sharan_Neuro-Symbolic_Evaluation_of_Text-to-Video_Models_using_Formal_Verification_CVPR_2025_paper.html">Neuro-Symbolic Evaluation of Text-to-Video Models Using Formal Verification</a>. CVPR, 2025.</p>
+    <p>[22] A. Sharan et al. <a href="https://arxiv.org/abs/2504.17180">We'll Fix It in Post: Neuro-Symbolic Video Generation and Repair</a>. arXiv, 2025.</p>
+    <p>[23] D. Kim et al. <a href="https://aclanthology.org/2026.findings-acl.1817/">VideoRepair: Improving Text-to-Video Generation via Misalignment Evaluation and Localized Refinement</a>. ACL Findings, 2026.</p>
+    <p>[24] H. Randall et al. <a href="https://arxiv.org/abs/2608.25622">RefineCut: Verifier-Guided Iterative Refinement for Timeline Editing</a>. EMNLP, 2026.</p>
+    <p>[25] X. Zhou et al. <a href="https://aclanthology.org/2026.acl-long.913/">MTAVG-Bench: A Diagnostic Benchmark for Multi-Talker Dialogue-Centric Audio-Video Generation</a>. ACL, 2026.</p>
+  </div>
+</section>
+
+</body>
+</html>
