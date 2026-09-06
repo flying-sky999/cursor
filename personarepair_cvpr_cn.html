@@ -732,10 +732,11 @@
 
           <p><strong>初始失败池。</strong> 使用固定版本的五个冻结编辑器产生初始结果，保留自然发生的失败；另在可精确控制的位置注入身份交换、台词错配、音频偏移、边界截断和非目标污染等故障。真实失败用于外部有效性，受控故障用于区间与责任监督，两类结果必须分表报告。干净的成功样本作为 no-repair 对照，用于测量误触发率。</p>
 
-          <p><strong>随机干预采集。</strong> 对状态 \(s\) 先由工具注册表构造合法支持 \(\mathcal A_{\mathrm{legal}}(s)\)，再按预注册的分层分配概率采样工具 \(g\)、参数 \(\theta\)、时间—空间—模态范围 \(\Omega\)、操作顺序 \(\pi\) 和随机种子 \(z\)：</p>
+          <p><strong>随机干预采集。</strong> 对状态 \(s\) 先由工具注册表构造合法动作空间 \(\mathcal A_{\mathrm{legal}}(s)\)，再预注册一个可覆盖的干预支持集 \(\mathcal A_{\mathrm{int}}(s)\subseteq\mathcal A_{\mathrm{legal}}(s)\)，并按分层分配概率采样工具序列 \(\mathbf g\)、参数 \(\boldsymbol\theta\)、时间—空间—模态范围 \(\boldsymbol\Omega\)、操作顺序 \(\pi\) 和随机种子 \(\mathbf z\)：</p>
           <div class="equation">
-            \(P=(g,\theta,\Omega,\pi,z)\sim p_{\mathrm{int}}(P\mid s),\quad
-            p_{\mathrm{int}}(P\mid s)&gt;0\ \text{for }P\in\mathcal A_{\mathrm{legal}}(s)\)。
+            \(P=(\mathbf g,\boldsymbol\theta,\boldsymbol\Omega,\pi,\mathbf z)
+            \sim p_{\mathrm{int}}(P\mid s),\quad
+            p_{\mathrm{int}}(P\mid s)&gt;0\ \text{for }P\in\mathcal A_{\mathrm{int}}(s)\)。
             <span class="eqno">(2)</span>
           </div>
           <p>每个 block 固定同一失败状态，并包含 no-op、单工具、删除关键工具、参数扰动、范围扩缩、关键工具对的顺序交换和多种子重复。保存实际分配概率，便于检查 positivity、重加权与选择偏差。均匀随机只作为基线；正式采集可在 strata 内做不确定性或决策敏感采样，但测试集必须来自独立、固定的随机协议。</p>
