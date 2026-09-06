@@ -384,12 +384,9 @@
         <a href="#enhanced-evaluation">3.2 评测方法</a>
         <a href="#enhanced-agent">4. Agent</a>
         <a href="#enhanced-formulation">4.1 问题与架构</a>
-        <a href="#enhanced-environment">4.2 干预环境</a>
-        <a href="#enhanced-mllms">4.3 三个 MLLM</a>
-        <a href="#enhanced-rl">4.4 Agentic RL</a>
-        <a href="#enhanced-training">4.5 训练阶段</a>
-        <a href="#enhanced-inference">4.6 单次在线推理</a>
-        <a href="#enhanced-differences">4.7 差异与新颖性</a>
+        <a href="#enhanced-environment">4.2 干预环境与 MLLM</a>
+        <a href="#enhanced-rl">4.3 Agentic RL</a>
+        <a href="#enhanced-training">4.4 训练与推理</a>
         <a href="#enhanced-experiments">5. 实验</a>
         <a href="#enhanced-main-results">5.1 主结果</a>
         <a href="#enhanced-analysis">5.2 深入分析</a>
@@ -607,11 +604,11 @@
 
       <div class="paper-panel" id="paper-enhanced" role="tabpanel" aria-labelledby="tab-enhanced" hidden>
         <header class="hero">
-          <div class="eyebrow">增强版论文架构稿 · AVE-Compass 同构目录 · Agentic RL</div>
+          <div class="eyebrow">增强版论文草稿 · Benchmark + Agentic RL</div>
           <h1>PersonaRepair-X</h1>
           <p class="subtitle">面向长视频多人物音画编辑的干预学习与约束式单程序修复</p>
           <div class="authors">匿名投稿 · Paper ID ####</div>
-          <div class="draft">严格写作约束：增强版沿用 AVE-Compass 的六段主结构；PersonaRepair-X 的未知数据规模一律以符号表示，所有结果均为“待测”。本页是可直接扩写为中文论文的架构稿，不代表已完成实验，也不预设 Oral。</div>
+          <div class="draft">研究草稿：未知数据规模一律以符号表示，所有实验结果均为“待测”；概念图不得作为真实结果使用。</div>
         </header>
 
         <section class="abstract" id="enhanced-abstract">
@@ -621,13 +618,17 @@
 
         <section id="enhanced-introduction">
           <h2>1. 引言</h2>
-          <div class="note"><strong>本节写作职责：</strong>先用一个多人物跨镜头失败案例建立问题，再指出“在线反思重试”与“自评分组 RL”没有解决随机工具的反事实选择，最后只提出可被实验逐条验证的贡献。不要在引言宣称“首个 Agentic RL 音视频系统”或“保证无退化”。</div>
 
           <p class="lead">PersonaRepair-X 不再问“怎样再生成一次”，而是问：面对一个已经失败的长视频，哪一个完整修复程序在随机编辑器下最可能修好目标，同时不破坏已经正确的人物、台词、背景和声音？</p>
 
           <p>例如，用户要求将跨越多个镜头的角色 A 替换为角色 B，并重写可见对白，同时只调整另一段画外音。初始结果可能在正脸镜头成功，却在遮挡后恢复为 A；对白内容正确但声纹属于另一人物；局部重绘还可能在补丁边界产生口型跳变并删除环境声。此时全段重生成扩大了可写区域，逐个在线试工具又会消耗昂贵生成调用。更关键的是，相同工具、参数与区间在不同随机种子下也可能给出相反结论。</p>
 
           <p>AVE-Compass/AVE-Agent [1] 已把自由音视频指令分解为依赖 DAG，并通过 Executor 自检和 Mixed Evaluator 决定通过、重混、子任务重生成或重规划。因此，“多工具规划 + evaluator 反馈”不是本文的新颖点。JarvisEvo [2] 已在照片编辑中以 iMCoT 观察工具结果，并用 SEPO 的 Editor/Evaluator 双循环和基于自评分组胜率的 GRPO 优化工具使用。因此，“采样多条轨迹 + 相对奖励 + 自我反思”也不是本文的新颖点。</p>
+
+          <figure>
+            <img src="assets/fig_enhanced_teaser_2026.png" alt="PersonaRepair-X 从离线干预经验到在线直接修复的概念总览" />
+            <figcaption><strong>图 E1.</strong> PersonaRepair-X 概览（概念流程，非真实结果）。离线阶段在同一失败状态上改变编辑器、参数、顺序、作用范围和随机种子，并由独立检查器测量目标增益、连带破坏与稳定性；在线阶段三个 MLLM 完成诊断、效果预测和修复程序生成，只执行一个选定程序。</figcaption>
+          </figure>
 
           <p>二者留下的共同空缺是<strong>随机长视频修复中的受控动作比较</strong>。历史轨迹受旧策略选择偏差影响；一次 evaluator 分数不能分离工具、参数、范围、顺序和随机种子的作用；终局分数广播给整条程序也无法判断哪一步修复了目标、哪一步造成了副作用。我们将工具调用视为可控实验，在相同失败状态上记录：</p>
           <div class="equation">
@@ -649,22 +650,25 @@
 
         <section id="enhanced-related">
           <h2>2. 相关工作</h2>
-          <div class="note"><strong>本节写作职责：</strong>像 AVE-Compass 一样把“编辑方法/Benchmark”和“Agent/RL”两条文献线分开；每段结尾明确本文只补哪一个缺口。必须完整描述 JarvisEvo 的 SEPO，而不能把它简化成普通 GRPO 基线。</div>
 
           <p><strong>音视频编辑方法与 Benchmark。</strong> InstructAV2AV [3]、AVI-Edit [4] 等工作推进了人物、语音、台词与实例级音画联合编辑；多镜头编辑又要求人物在远距离重现后保持身份、声音和场景关系。AVE-Compass [1] 的关键贡献不是单一质量分数，而是联合音画、语音、纯视频和纯音频四分支 taxonomy，以及 Instruction Following、Fidelity Preserving、Editing Intent、Realism、原子 checklist 和客观音画指标的分离评价。PersonaRepair-X 复用这套组织原则，但评价对象从“第一次编辑能力”转为“给定失败结果后的诊断—效果预测—一次修复”。</p>
 
           <p><strong>音视频编辑 Agent。</strong> AVE-Agent [1] 用 Planner 建立依赖 DAG，Executor 按视频、音频和语音分支执行并局部自检，Mixed Evaluator 再决定重混、局部重生成或重规划。Crayotter [5] 等系统进一步外显时间线与工具轨迹。它们证明了结构化计划和局部重执行的价值；PersonaRepair-X 不以“更多 Agent”作为贡献，而研究在线执行前能否从离线受控干预中学到随机工具的状态条件效果。</p>
 
-          <p><strong>Agentic RL 与 JarvisEvo。</strong> JarvisEvo [2] 面向照片编辑，以 iMCoT 交替生成推理、工具调用和图像观察。其 SEPO 包含两个协同循环：Editor 用格式奖励、工具准确奖励和由自评分数计算的组内 pairwise win-rate 奖励进行 GRPO；Evaluator 在人工评价数据上用格式与分数对齐奖励更新。Selective Loss Masking 屏蔽 Editor 轨迹中的自评 token，以降低信息泄漏和训练崩溃，随后再用 on-policy 反思样本微调。PersonaRepair-X 不复刻该自评闭环：三个 MLLM 参数分离，奖励来自冻结的独立检查器与人工校准；相对优势在同状态、匹配随机种子的真实工具结果上计算，并分配到程序中的具体操作。</p>
+          <p><strong>Agentic RL。</strong> JarvisEvo [2] 面向照片编辑，以 iMCoT 交替生成推理、工具调用和图像观察；其 SEPO 同时优化 Editor 与人工分数校准的 Evaluator，并用 Selective Loss Masking 降低自评分泄漏。Crayotter-GRPB [9] 又将同任务候选的序位偏好变为组相对优势，并以滞后、受限的 allocator 向长程视频编辑片段分配信用。PersonaRepair-X 因而不把“group-relative RL”或“步骤信用”单独作为创新：我们的 rollout group 由同状态、匹配随机种子的工具/参数/范围/顺序干预构成；奖励来自冻结的独立检查器；真实删除与换序分支用于识别具体操作的边际与交互贡献。</p>
 
           <p><strong>效果模型、随机实验与约束 RL。</strong> Model-based RL、上下文 bandit、因果实验设计、PPO [7]、CPO [8] 与偏好优化均已研究动作效果或安全策略。因此，“world model”“随机数据”“Lagrangian”或“group-relative advantage”单独都不是新算法贡献。本文可辩护的组合点只在于：连续时间—空间—模态动作上的随机编辑器序列、同状态多种子配对、可定位的音画约束转移，以及把这些信号蒸馏为无在线试错的修复程序。</p>
         </section>
 
         <section id="enhanced-benchmark">
           <h2>3. PersonaRepair-X-Bench: Benchmark &amp; Evaluation</h2>
-          <div class="note"><strong>本节写作职责：</strong>先定义可复现任务与 failure taxonomy，再写数据来源、干预采集、split 和 checklist，最后把主观与客观指标分开。Benchmark 必须能独立评价三个 MLLM；不能只拿最终视频分数反推各模块有效。</div>
 
           <p>每个样本以 \(\mathcal E=(X,q,Y_0,\tau_0,\mathcal C,\mathcal I)\) 表示：\(X\) 为源音视频，\(q\) 为原编辑指令，\(Y_0\) 为待修复结果，\(\tau_0\) 为初始工具轨迹，\(\mathcal C\) 为目标与保护约束，\(\mathcal I\) 为随机干预记录。Benchmark 不把所有问题混成一个 leaderboard，而是设置三个可单独提交的任务轨道。</p>
+
+          <figure>
+            <img src="assets/fig_enhanced_benchmark_ave_2026.png" alt="PersonaRepair-X-Bench 任务分类与评测框架" />
+            <figcaption><strong>图 E2.</strong> PersonaRepair-X-Bench。数据覆盖联合音画、语音、纯视觉和纯音频四类编辑，并将失败诊断、干预效果预测、单程序修复拆成三个独立轨道；语义 checklist、任务匹配的客观指标和独立人工审计共同评价，未知数据规模仅以符号占位。</figcaption>
+          </figure>
 
           <table>
             <thead>
@@ -794,7 +798,6 @@
 
         <section id="enhanced-agent">
           <h2>4. PersonaRepair-X Agent</h2>
-          <div class="note"><strong>本节写作职责：</strong>像 AVE-Agent 章节一样先给可执行系统，再给训练。必须明确三种 MLLM、五个冻结编辑器、独立 verifier 之间没有角色偷换；Agentic RL 的每个符号都应对应真实媒体环境中的状态、动作或反馈。</div>
 
           <table>
             <thead>
@@ -812,6 +815,11 @@
               <tr><td>\(J_{\mathrm{ind}}\) + validator</td><td>冻结/人工校准</td><td>训练反馈、隐藏测试评价、提交/回滚</td><td>不与三个 MLLM 共享梯度或自评分</td></tr>
             </tbody>
           </table>
+
+          <figure>
+            <img src="assets/fig_enhanced_agentic_rl_ave_2026_v2.png" alt="PersonaRepair-X 训练与推理阶段的 Agentic RL 架构" />
+            <figcaption><strong>图 E3.</strong> PersonaRepair-X 的训练与推理。训练时，受控干预组在真实冻结编辑器中产生媒体 rollout，独立 verifier 给出向量 reward，过程增量、删除分支和换序分支共同提供步骤信用，只更新 Repair Policy；推理时三个 MLLM 权重全部冻结，系统不搜索在线候选，只执行一个完整程序并验收或回滚。</figcaption>
+          </figure>
 
           <h3 id="enhanced-formulation">4.1 问题定义与分层架构</h3>
           <p>给定源视频 \(X=(V,A)\)、指令 \(q\)、失败结果 \(Y_0\)、初始轨迹 \(\tau_0\) 和不可修改项 \(\mathcal C^{-}\)，Diagnostic MLLM 先产生失败集合 \(\widehat{\mathcal F}=D_\phi(X,q,Y_0,\tau_0)\)。目标是生成一个程序 \(P^\star\)，使目标约束 \(\mathcal C^{+}\) 被满足，同时限制保护违反、随机风险、修改范围与成本。</p>
@@ -855,7 +863,7 @@
   "stop": true
 }</pre>
 
-          <h3 id="enhanced-environment">4.2 离线随机干预环境与 rollout group</h3>
+          <h3 id="enhanced-environment">4.2 离线干预环境与三个可训练 MLLM</h3>
           <p>环境 \(\mathcal M=(\mathcal S,\mathcal A_{\mathrm{legal}},\mathcal T,
             \mathbf R,\mathcal B)\) 由五个冻结编辑器、媒体合成器、独立检查器和预算 \(\mathcal B\) 构成。动作不是文本模拟：训练 rollout 必须真正执行冻结工具，得到</p>
           <div class="equation">
@@ -874,8 +882,7 @@
           </div>
           <p>同状态控制内容难度，同种子 block 降低随机工具比较方差；工具不共享种子语义时，使用预注册的 matched seed index 与重复 block，而不声称逐随机变量完全相同。删除、范围收缩和顺序交换分支用于步骤级反事实信用。</p>
 
-          <h3 id="enhanced-mllms">4.3 三个可训练 MLLM</h3>
-          <p><strong>Diagnostic MLLM。</strong> \(D_\phi(X,q,Y_0,\tau_0)\) 输出一组
+          <p id="enhanced-mllms"><strong>三个可训练 MLLM。</strong> Diagnostic MLLM \(D_\phi(X,q,Y_0,\tau_0)\) 输出一组
             \((p,\rho,I,\mathcal M,e,b,u)\)。输入可包含 ASR/forced alignment、speaker verification、active-speaker、lip-sync、ReID、镜头与源—结果差异 token。训练目标为：</p>
           <div class="equation">
             \(\mathcal L_D=\mathcal L_{\mathrm{type}}+\lambda_p\mathcal L_{\mathrm{person}}
@@ -898,7 +905,7 @@
 
           <p><strong>Repair Policy MLLM。</strong> \(\pi_\theta(P\mid s_0,D_\phi,E_\psi)\) 使用 grammar-constrained decoder 输出程序。先模仿人工/Oracle-Pareto 程序，再进入真实工具环境的 Agentic RL。策略看得到 Effect 的分布与不确定性，但最终 reward 只来自独立执行结果。三个 MLLM 不共享输出头；消融可比较共享 backbone，但主方法应避免角色串扰。</p>
 
-          <h3 id="enhanced-rl">4.4 干预落地的约束式 Agentic RL</h3>
+          <h3 id="enhanced-rl">4.3 干预落地的约束式 Agentic RL</h3>
           <p><strong>奖励向量，而非单一自评分。</strong> 对程序 \(P_i\) 和种子 \(z_k\)，独立环境返回：</p>
           <div class="equation">
             \(\mathbf r_{i,k}=
@@ -971,7 +978,7 @@
             <li><strong>提交保护：</strong>独立 verifier 只做 accept/rollback。rollback 记为一次修复失败和已消耗成本，不能触发第二个在线生成程序。</li>
           </ul>
 
-          <h3 id="enhanced-training">4.5 训练阶段</h3>
+          <h3 id="enhanced-training">4.4 训练阶段与线上推理</h3>
           <table>
             <thead>
               <tr><th>阶段</th><th>更新模块</th><th>数据与目标</th><th>进入下一阶段的门槛</th></tr>
@@ -987,7 +994,7 @@
           </table>
           <p>不做用户任务内的参数更新。新在线日志只能进入隔离经验池，重新随机干预、离线训练并通过固定回归集后发布新版本；因此本文不滥用“实时自进化”表述。</p>
 
-          <h3 id="enhanced-inference">4.6 线上单次修复程序</h3>
+          <p id="enhanced-inference"><strong>线上单次修复程序。</strong></p>
           <ol>
             <li>Diagnostic MLLM 对 \(X,q,Y_0,\tau_0\) 运行一次，输出失败集合、保护集合和不确定项；高风险身份不确定时直接 abstain。</li>
             <li>工具注册表生成少量合法程序模板；Tool-Effect MLLM 只在特征空间预测目标增益、保护风险、范围、成本与下尾，不渲染媒体。</li>
@@ -1005,7 +1012,7 @@
           </div>
           <p>式 (19) 表示策略学习到的决策准则，不意味着线上枚举并渲染所有 \(P\)。最终只产生一个程序和至多 \(T_{\max}\) 个其中声明的冻结工具调用。</p>
 
-          <h3 id="enhanced-differences">4.7 与 AVE-Agent、JarvisEvo 的精确差异及新颖性风险</h3>
+          <p id="enhanced-differences"><strong>与 AVE-Agent、JarvisEvo 的差异。</strong> 下表只比较方法事实；本文不以 Agent 数量或通用 RL 组件作为贡献。</p>
           <table>
             <thead>
               <tr><th>维度</th><th>AVE-Agent [1]</th><th>JarvisEvo [2]</th><th>PersonaRepair-X</th></tr>
@@ -1022,25 +1029,10 @@
             </tbody>
           </table>
 
-          <table>
-            <thead>
-              <tr><th>潜在主张</th><th>新颖性判断</th><th>风险与必须补的证据</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>三个 MLLM + 五个工具</td><td>低</td><td>只是系统拆分；不能作主贡献</td></tr>
-              <tr><td>随机化工具调用数据</td><td>低—中</td><td>若只优于无增强 SFT，会被视为昂贵数据增强；必须同规模比较观察日志、重加权日志和随机干预</td></tr>
-              <tr><td>Interventional Tool-Effect 分布模型</td><td>中</td><td>需证明顺序、范围与种子分布预测，以及未见人物/组合/editor version 泛化</td></tr>
-              <tr><td>Agentic RL 公式</td><td>中，算法风险高</td><td>组相对 PPO、Lagrangian、CVaR 和 difference reward 均有先例；创新只能来自媒体干预组和可验证步骤信用的结合</td></tr>
-              <tr><td>线上单程序修复</td><td>中，取决于结果</td><td>必须在同预算下胜过 AVE-Agent 式 retry 和 JarvisEvo-style SEPO，并显著减少调用与非目标破坏</td></tr>
-              <tr><td>PersonaRepair-X-Bench</td><td>中—高潜力</td><td>前提是公开细粒度失败、程序、propensity、多种子结果和人工校准；仅发布视频—指令对不足</td></tr>
-            </tbody>
-          </table>
-          <div class="warning"><strong>严格判断：</strong>当前方案的新颖性风险为<strong>中高</strong>，不能默认达到 CVPR Oral。若没有同状态随机对照、步骤级 ground truth、跨编辑器版本泛化和明显的“更少在线调用 + 更低保护回退”，审稿人很可能将其判断为 AVE-Agent 外接 world model，再叠加 JarvisEvo/GRPO 风格训练。最稳妥的主线是“新 Benchmark + intervention-grounded one-program repair”，而不是宣称发明通用 RL 算法。</div>
         </section>
 
         <section id="enhanced-experiments">
           <h2>5. 实验</h2>
-          <div class="note"><strong>本节写作职责：</strong>严格复用 AVE-Compass 的 5.1 主结果、5.2 深入分析、5.3 消融顺序。每个主张至少对应一张表；所有方法共享冻结编辑器、输入证据与预算，JarvisEvo 只能写成“style reimplementation”，不能暗示其原论文直接支持长视频。</div>
 
           <h3 id="enhanced-main-results">5.1 主结果</h3>
           <p><strong>公平协议。</strong> 报告两种制度：① same-call/same-cost，所有方法受相同实际生成调用和成本约束；② native workflow，AVE-Agent-style 与 JarvisEvo-style 可按各自循环运行，但完整报告调用、延迟和成本。所有方法使用相同 G1–G5、相同诊断输入和隐藏 evaluator；超预算计失败。每个随机方法运行预注册种子并报告 paired bootstrap 置信区间。</p>
@@ -1129,8 +1121,7 @@
 
         <section id="enhanced-conclusion">
           <h2>6. 结论</h2>
-          <div class="note"><strong>本节写作职责：</strong>只回收已经由实验支持的三条主张；未跑通的模块不得在结论中升级为“首次”或“保证”。结论之后明确限制、伦理边界与可复现承诺。</div>
-          <p><strong>结论主句。</strong> PersonaRepair-X 将长视频多人物音画编辑的修复建模为一个干预落地、风险受约束的程序决策问题。PersonaRepair-X-Bench 分离诊断、效果预测和单程序修复；三个训练 MLLM 负责定位、预测与决策，五个冻结编辑器负责媒体生成；离线受控 rollout 为步骤信用提供真实依据，线上则只提交一个程序并验收或回滚。最终稿只能在实验支持时声称该设计比在线反思重试减少生成调用和保护回退。</p>
+          <p>PersonaRepair-X 将长视频多人物音画编辑的修复建模为一个干预落地、风险受约束的程序决策问题。PersonaRepair-X-Bench 分离诊断、效果预测和单程序修复；三个训练 MLLM 负责定位、预测与决策，五个冻结编辑器负责媒体生成；离线受控 rollout 为步骤信用提供真实依据，线上则只提交一个程序并验收或回滚。</p>
 
           <p><strong>局限性。</strong> 离线随机干预昂贵，组合支持仍受 \(N_{\mathrm{int}},K_z,T_{\max}\) 限制；条件随机化只能识别采样支持内的平均与下尾效果，不能保证新编辑器或未见 schema 上的因果泛化。Diagnostic 的身份/说话人误差会级联到 Effect 和 Policy。独立指标与 checklist 仍可能漏掉人类可感知伪影；accept/rollback 也只是对已枚举保护项的事务保证，不是感知意义上的绝对 no-regression。单程序协议降低在线成本，但在必须观察中间媒体后才能决策的任务上可能弱于闭环 Agent。</p>
 
@@ -1148,11 +1139,12 @@
             <li>Z. Shao et al. <a href="https://arxiv.org/abs/2402.03300">DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models</a>. arXiv, 2024.</li>
             <li>J. Schulman et al. <a href="https://arxiv.org/abs/1707.06347">Proximal Policy Optimization Algorithms</a>. arXiv, 2017.</li>
             <li>J. Achiam et al. <a href="https://proceedings.mlr.press/v70/achiam17a.html">Constrained Policy Optimization</a>. ICML, 2017.</li>
+            <li>Y. Zheng et al. <a href="https://arxiv.org/abs/2608.02694">Crayotter: Learning Long-Horizon Video Editing Agents via Group-Relative Preference Backpropagation</a>. arXiv, 2026.</li>
           </ol>
         </section>
 
         <footer class="footer">
-          PersonaRepair-X 增强版架构稿 · AVE-Compass 同构目录 · 所有未知规模与实验结果待实测
+          PersonaRepair-X 增强版论文草稿 · Benchmark + Agentic RL · 所有未知规模与实验结果待实测
         </footer>
       </div>
 
